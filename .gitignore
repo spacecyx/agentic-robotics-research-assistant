@@ -10,6 +10,10 @@ __pycache__/
 env/
 ENV/
 
+# Inputs
+data/*.pdf
+!data/.gitkeep
+
 # Outputs
 outputs/
 
