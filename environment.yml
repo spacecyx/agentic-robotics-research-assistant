@@ -1,0 +1,6 @@
+name: agentic-robotics
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+prefix: /home/cyx/miniconda3/envs/agentic-robotics
