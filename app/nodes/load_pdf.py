@@ -1,6 +1,6 @@
 # nodes/ 只放 LangGraph 节点 | 负责把 PDF 读取能力接入 LangGraph state
 from app.states import PaperState
-from app.tools.pdf_loader import clean_paper_text, load_pdf_text, extract_paper_title
+from app.tools.pdf_loader_pro import clean_paper_text, load_pdf_text, extract_paper_title
 
 
 def load_pdf_node(state: PaperState) -> PaperState:

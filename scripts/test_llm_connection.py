@@ -17,3 +17,6 @@ response = client.chat.completions.create(
 )
 
 print(response.choices[0].message.content)
+
+
+# 项目根目录下运行测试代码：python -m scripts.test_llm_connection
