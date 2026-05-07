@@ -8,6 +8,8 @@ def load_pdf_node(state: PaperState) -> PaperState:
     LangGraph node:
     Load PDF text and clean it.
     """
+    print(">>> running load_pdf_node")
+
     pdf_path = state["pdf_path"]
 
     raw_text = load_pdf_text(pdf_path)

@@ -50,10 +50,13 @@ def summarize_paper_node(state: PaperState) -> PaperState:
     LangGraph node:
     Generate a structured paper summary.
     """
+    print(">>> running summarize_paper_node")
+    
     llm = get_llm()
 
     prompt = SUMMARY_PROMPT.format(
-        paper_text=state["paper_text"]
+        # paper_text=state["paper_text"]       # based on full text
+        paper_text=state["retrieved_context"]  # based on retrieved chunks
     )
 
     response = llm.invoke(prompt)

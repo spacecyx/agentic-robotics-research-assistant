@@ -8,7 +8,7 @@ from app.tools.llm_client import get_llm
 CRITIQUE_PROMPT = """
 你是一个严谨的 AI 学习教练、求职策略顾问和技术研究助理。
 
-下面是一篇论文的结构化摘要。请从求职和项目实践角度，对这篇论文进行批判性分析。
+下面请根据根据检索到的论文内容和文章总结，从求职和项目实践角度，对这篇论文进行批判性分析。
 
 分析对象是一名有激光SLAM / 三维感知 / 机器人背景，正在转向深度学习 / 大模型 / Agent 方向的工程师。
 
@@ -48,9 +48,12 @@ CRITIQUE_PROMPT = """
 ### 8. 风险和局限
 指出不能夸大的地方。
 
-论文摘要如下：
+检索的论文内容如下：
+{retrieved_context}
 
+论文摘要如下：
 {paper_summary}
+
 """
 
 
@@ -59,9 +62,12 @@ def critique_paper_node(state: PaperState) -> PaperState:
     LangGraph node:
     Critique the paper from learning, project, and job-search perspectives.
     """
+    print(">>> running critique_paper_node")
+    
     llm = get_llm()
 
     prompt = CRITIQUE_PROMPT.format(
+        retrieved_context=state["retrieved_context"], 
         paper_summary=state["paper_summary"]
     )
 
