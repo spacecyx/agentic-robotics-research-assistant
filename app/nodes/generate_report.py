@@ -13,6 +13,8 @@ def generate_report_node(state: PaperState) -> PaperState:
     LangGraph node:
     Generate and save a Markdown report.
     """
+    print(">>> running generate_report_node")
+    
     pdf_path = Path(state["pdf_path"])
     file_name = pdf_path.stem
     paper_title = state["paper_title"]
