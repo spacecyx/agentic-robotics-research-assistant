@@ -101,7 +101,7 @@ retrieve_top_k
 relevant paper chunks
 ```
 
-### Day 4/5 Progress
+### Day 4/5
 
 Polished the LangGraph-based RAG pipeline into a more reproducible and debuggable paper analysis system.
 
@@ -161,7 +161,7 @@ python -m scripts.test_pipeline \
   --top-k 3
 ```
 
-## RUN (present)
+## Run(present)
 ```bash
 python -m app.main \
   --pdf data/resnet.pdf \
