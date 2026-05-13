@@ -135,6 +135,47 @@ generate_report_node
 Markdown report saved to outputs/
 ```
 
+## Day 6
+
+Upgraded the retrieval layer from a single TF-IDF retriever to a modular retriever architecture.
+
+Main features:
+
+- Added a pluggable retriever interface.
+- Refactored the original TF-IDF retriever into `TfidfRetriever`.
+- Added `EmbeddingRetriever` based on `sentence-transformers`.
+- Added `RetrieverFactory` for switching retrieval strategies.
+- Added CLI options:
+  - `--retriever-type`
+  - `--embedding-model`
+  - `--top-k`
+- Added a retriever comparison script.
+
+# Retriever Types
+```text
+tfidf       keyword-based retrieval using TF-IDF cosine similarity
+embedding  semantic retrieval using sentence-transformer embeddings
+```
+
+Current Workflow
+```text
+PDF + query + retriever config
+        ↓
+PDF parsing
+        ↓
+text splitting
+        ↓
+retriever factory
+        ↓
+TF-IDF retriever or embedding retriever
+        ↓
+retrieved context
+        ↓
+LangGraph analysis nodes
+        ↓
+Markdown report
+```
+
 ## Test
 
 Test the PDF loader:
@@ -155,10 +196,20 @@ python -m scripts.test_retriever --pdf ./data/transformer.pdf --query "multi-hea
 
 Test simple RAG based paper report: 
 ```bash
-python -m scripts.test_pipeline \
+python -m scripts.test_pipeline_day5 \
   --pdf data/resnet.pdf \
   --query "What is the main contribution and limitation of this paper?" \
   --top-k 3
+```
+
+Test upgraded RAG based paper report: (embedding as an example)
+```bash
+python scripts/test_pipeline.py \
+  --pdf data/resnet.pdf \
+  --query "What is the main contribution of this paper?" \
+  --top-k 3 \
+  --retriever-type embedding
+  # --retriever-type tfidf
 ```
 
 ## Run(present)
@@ -169,6 +220,23 @@ python -m app.main \
   --top-k 3
 ```
 
+## Run with TF-IDF
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What is the degradation problem in deep neural networks?" \
+  --top-k 5 \
+  --retriever-type embedding
+```
+
+## Run with Embedding Retrieval
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What is the degradation problem in deep neural networks?" \
+  --top-k 5 \
+  --retriever-type embedding
+```
 ## Output
 
 Generated reports are saved under:

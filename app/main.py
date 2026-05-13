@@ -31,6 +31,24 @@ def parse_args() -> argparse.Namespace:
         help="Number of top retrieved chunks used as RAG context.",
     )
 
+    # new add in Day 6
+    # 选择 RAG 检索方式
+    parser.add_argument(
+        "--retriever-type",
+        type=str,
+        default="tfidf",
+        choices=["tfidf", "embedding"],
+        help="Retriever type used for RAG context retrieval.",
+    )
+
+    # 选择 embedding 模型
+    parser.add_argument(
+        "--embedding-model",
+        type=str,
+        default="sentence-transformers/all-MiniLM-L6-v2", 
+        help="Embedding model name used by embedding retriever.",
+    )
+
     return parser.parse_args()
 
 
@@ -80,10 +98,15 @@ def main() -> None:
     graph = build_graph()
 
     initial_state: PaperState = {
-        "pdf_path": str(pdf_path),
+        "pdf_path": str(pdf_path),      # for Day 5 has added validate_pdf_path(), which need str
         "query": args.query,
         "top_k": args.top_k,
+        "retriever_type": args.retriever_type,
+        "embedding_model": args.embedding_model,
     }
+
+    # 展示选择的模型
+    # print(f"Retriever type: {result.get('retriever_type', args.retriever_type)}")
 
     result = graph.invoke(initial_state)
 

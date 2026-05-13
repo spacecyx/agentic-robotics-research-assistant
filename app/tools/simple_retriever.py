@@ -1,4 +1,4 @@
-# 简单检索模块
+# 简单检索模块 (前期版本 | 后期走 app.tools.retrievers.tfidf_retriever)
 
 # app/tools/simple_retriever.py
 
