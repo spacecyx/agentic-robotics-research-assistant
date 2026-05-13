@@ -176,6 +176,36 @@ LangGraph analysis nodes
 Markdown report
 ```
 
+
+### Day 7
+
+Implemented Hybrid Retrieval and a lightweight retrieval evaluation pipeline.
+
+Main features:
+
+- Extended `RetrievalResult` with `source` and `metadata` fields.
+- Added `HybridRetriever` to combine TF-IDF keyword retrieval and Embedding semantic retrieval.
+- Updated Retriever Factory to support `tfidf`, `embedding`, and `hybrid` retrievers.
+- Added a small retrieval evaluation dataset in `data/eval_queries.json`.
+- Implemented retrieval metrics including Hit@K, MRR@K, and Average Rank.
+- Updated retriever comparison script to compare TF-IDF, Embedding, and Hybrid retrieval results.
+
+Retrieval workflow:
+
+```text
+PDF
+  ↓
+Text chunks
+  ↓
+TF-IDF Retriever + Embedding Retriever
+  ↓
+Hybrid score fusion
+  ↓
+Top-K retrieved chunks
+  ↓
+Hit@K / MRR@K evaluation
+```
+
 ## Test
 
 Test the PDF loader:
@@ -204,12 +234,17 @@ python -m scripts.test_pipeline_day5 \
 
 Test upgraded RAG based paper report: (embedding as an example)
 ```bash
-python scripts/test_pipeline.py \
+python -m scripts.test_pipeline_day6 \
   --pdf data/resnet.pdf \
   --query "What is the main contribution of this paper?" \
   --top-k 3 \
   --retriever-type embedding
   # --retriever-type tfidf
+```
+
+Evaluate different RAG method:
+```bash
+python -m scripts.evaluate_retrievers --pdf_path data/resnet.pdf --top_k 3
 ```
 
 ## Run(present)

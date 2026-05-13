@@ -25,7 +25,7 @@ class EmbeddingRetriever:
 
         # 模型加载
         self.model_name = model_name
-        self.model = SentenceTransformer(model_name)
+        self.model = SentenceTransformer(model_name, local_files_only=True)
 
         # 全量编码 [最耗时] 把整个知识库 (chunks) 全部转化成了矩阵 self.chunk_embeddings
         self.chunk_embeddings = self.model.encode(
@@ -55,10 +55,24 @@ class EmbeddingRetriever:
         # argsort()[::-1] 按照分数从高到低排个序，取前 top_k 个
         top_indices = np.argsort(scores)[::-1][:top_k]
 
+        # 对应修改
+        # return [
+        #     RetrievalResult(
+        #         chunk=self.chunks[index],
+        #         score=float(scores[index]),
+        #     )
+        #     for index in top_indices
+        # ]
         return [
             RetrievalResult(
                 chunk=self.chunks[index],
                 score=float(scores[index]),
+                source="embedding",
+                metadata={
+                    "chunk_index": int(index),
+                    "embedding_score": float(scores[index]),
+                    "rank": rank + 1,
+                },
             )
-            for index in top_indices
+            for rank, index in enumerate(top_indices)
         ]

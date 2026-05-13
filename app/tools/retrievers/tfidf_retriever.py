@@ -41,10 +41,24 @@ class TfidfRetriever:
 
         # 遍历 top_indices（通常是检索得分最高的前几个索引），并针对每一个索引创建一个 RetrievalResult 对象
         # 比起传统的 for 循环（先建空列表再 append），这种写法更加紧凑且执行效率更高
+        # return [
+        #     RetrievalResult(
+        #         chunk=self.chunks[index],
+        #         score=float(scores[index]),
+        #     )
+        #     for index in top_indices
+        # ]
+        # fixed in Day 7
         return [
             RetrievalResult(
                 chunk=self.chunks[index],
                 score=float(scores[index]),
+                source="tfidf",
+                metadata={
+                    "chunk_index": int(index),
+                    "tfidf_score": float(scores[index]),
+                    "rank": rank + 1,
+                },
             )
-            for index in top_indices
+            for rank, index in enumerate(top_indices)
         ]

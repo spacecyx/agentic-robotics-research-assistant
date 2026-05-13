@@ -1,0 +1,62 @@
+[
+  {
+    "query": "What is the degradation problem observed when training deeper plain networks?",
+    "expected_keywords": ["degradation", "higher training error", "not caused by overfitting"],
+    "min_keyword_matches": 2
+  },
+  {
+    "query": "How does residual learning reformulate the desired underlying mapping H(x)?",
+    "expected_keywords": ["H(x)", "F(x)", "H(x)-x", "F(x)+x"],
+    "min_keyword_matches": 2
+  },
+  {
+    "query": "Why are identity shortcut connections useful in residual blocks?",
+    "expected_keywords": ["identity mapping", "extra parameter", "computational complexity", "shortcut connections"],
+    "min_keyword_matches": 2
+  },
+  {
+    "query": "When does ResNet use projection shortcuts instead of pure identity shortcuts?",
+    "expected_keywords": ["projection shortcut", "match dimensions", "1×1", "dimensions increase"],
+    "min_keyword_matches": 2
+  },
+  {
+    "query": "What is the bottleneck block design used in ResNet-50, ResNet-101, and ResNet-152?",
+    "expected_keywords": ["bottleneck", "1×1", "3×3", "reducing", "increasing"],
+    "min_keyword_matches": 3
+  },
+  {
+    "query": "How do ResNet-18 and ResNet-34 compare with plain 18-layer and 34-layer networks on ImageNet?",
+    "expected_keywords": ["18-layer", "34-layer", "plain", "ResNet", "training error"],
+    "min_keyword_matches": 3
+  },
+  {
+    "query": "What are the three shortcut options A, B, and C compared in the ResNet paper?",
+    "expected_keywords": ["zero-padding", "projection shortcuts", "option A", "option B", "option C"],
+    "min_keyword_matches": 2
+  },
+  {
+    "query": "What does the ResNet paper observe about layer response magnitudes in residual networks?",
+    "expected_keywords": ["standard deviations", "layer responses", "smaller responses", "residual functions"],
+    "min_keyword_matches": 2
+  },
+  {
+    "query": "What happens when the authors train a ResNet with over 1000 layers on CIFAR-10?",
+    "expected_keywords": ["1202-layer", "overfitting", "training error", "test error"],
+    "min_keyword_matches": 2
+  },
+  {
+    "query": "How does replacing VGG-16 with ResNet-101 affect Faster R-CNN object detection on COCO?",
+    "expected_keywords": ["Faster R-CNN", "COCO", "ResNet-101", "VGG-16", "mAP"],
+    "min_keyword_matches": 3
+  },
+  {
+    "query": "What training strategy does the ResNet paper use for ImageNet classification?",
+    "expected_keywords": ["batch normalization", "SGD", "momentum", "weight decay", "learning rate"],
+    "min_keyword_matches": 3
+  },
+  {
+    "query": "Why are identity shortcuts especially important for bottleneck architectures?",
+    "expected_keywords": ["identity shortcuts", "bottleneck", "time complexity", "model size", "projection"],
+    "min_keyword_matches": 3
+  }
+]
