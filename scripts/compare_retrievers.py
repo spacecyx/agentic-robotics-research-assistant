@@ -41,6 +41,22 @@ def parse_args() -> argparse.Namespace:
         help="Embedding model name.",
     )
 
+    # Day 7
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=0.6,
+        help="Hybrid retrieval weight for embedding score. "
+             "hybrid_score = alpha * embedding_score + (1 - alpha) * tfidf_score.",
+    )
+
+    parser.add_argument(
+        "--candidate-k",
+        type=int,
+        default=20,
+        help="Number of candidates retrieved from each retriever before hybrid fusion.",
+    )
+
     return parser.parse_args()
 
 
@@ -99,6 +115,14 @@ def main() -> None:
         embedding_model=args.embedding_model,
     )
 
+    hybrid_retriever = create_retriever(
+        retriever_type="hybrid",
+        chunks=chunks,
+        embedding_model=args.embedding_model,
+        alpha=args.alpha,
+        candidate_k=args.candidate_k,
+    )
+
     tfidf_results = tfidf_retriever.search(
         query=args.query,
         top_k=args.top_k,
@@ -108,13 +132,21 @@ def main() -> None:
         query=args.query,
         top_k=args.top_k,
     )
+    
+    hybrid_results = hybrid_retriever.search(
+        query=args.query,
+        top_k=args.top_k,
+    )
 
     print(f"PDF: {pdf_path}")
     print(f"Query: {args.query}")
     print(f"Top-K: {args.top_k}")
+    print(f"Alpha: {args.alpha}")
+    print(f"Candidate-K: {args.candidate_k}")
 
     print_results("TF-IDF RESULTS", tfidf_results)
     print_results("EMBEDDING RESULTS", embedding_results)
+    print_results("HYBRID RESULTS", hybrid_results)
 
 
 if __name__ == "__main__":
