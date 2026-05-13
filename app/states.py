@@ -18,6 +18,8 @@ class PaperState(TypedDict, total=False):
     pdf_path: str
     query: str
     top_k: int
+    retriever_type: str         # new add in Day 6 
+    embedding_model: str        # new add in Day 6 
 
     # PDF parsing
     raw_text: str

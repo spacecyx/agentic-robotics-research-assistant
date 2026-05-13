@@ -40,6 +40,8 @@ def generate_report_node(state: PaperState) -> PaperState:
     pdf_path = state.get("pdf_path", "")
     query = state.get("query", "")
     top_k = state.get("top_k", 5)
+    retriever_type = state.get("retriever_type", "tfidf")
+    embedding_model = state.get("embedding_model", "")
 
     paper_title = state.get("paper_title", "Unknown Paper")
     paper_summary = state.get("paper_summary", "")
@@ -55,6 +57,8 @@ def generate_report_node(state: PaperState) -> PaperState:
 - PDF: `{pdf_path}`
 - Query: {query}
 - Top-K: {top_k}
+- Retriever Type: {retriever_type}
+- Embedding Model: {embedding_model}
 
 ## Paper Title
 
