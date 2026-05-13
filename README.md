@@ -135,7 +135,7 @@ generate_report_node
 Markdown report saved to outputs/
 ```
 
-## Day 6
+### Day 6
 
 Upgraded the retrieval layer from a single TF-IDF retriever to a modular retriever architecture.
 
@@ -151,7 +151,7 @@ Main features:
   - `--top-k`
 - Added a retriever comparison script.
 
-# Retriever Types
+ Retriever Types
 ```text
 tfidf       keyword-based retrieval using TF-IDF cosine similarity
 embedding  semantic retrieval using sentence-transformer embeddings
