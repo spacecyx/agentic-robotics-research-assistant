@@ -7,6 +7,8 @@ from app.tools.retrievers.tfidf_retriever import TfidfRetriever
 from app.tools.retrievers.embedding_retriever import EmbeddingRetriever
 from app.tools.retrievers.hybrid_retriever import HybridRetriever
 
+from app.tools.retrievers.faiss_retriever import FaissRetriever
+
 
 def create_retriever(
     retriever_type: str,
@@ -14,6 +16,8 @@ def create_retriever(
     embedding_model: str | None = None,
     alpha: float = 0.6,
     candidate_k: int = 20,
+    faiss_index_dir: str | None = None,
+    rebuild_faiss_index: bool = False,
 ) -> BaseRetriever:
     # 归一化处理 | 大小写保护
     retriever_type = retriever_type.lower().strip()
@@ -28,6 +32,15 @@ def create_retriever(
             model_name=embedding_model or "sentence-transformers/all-MiniLM-L6-v2",
         )
     
+    # new add in plus work
+    if retriever_type == "faiss":
+        return FaissRetriever(
+            chunks=chunks,
+            model_name=embedding_model or "sentence-transformers/all-MiniLM-L6-v2",
+            index_dir=faiss_index_dir,
+            rebuild_index=rebuild_faiss_index,
+        )
+
     # new add hybrid retriever in Day 7
     if retriever_type == "hybrid":
         return HybridRetriever(
@@ -40,7 +53,7 @@ def create_retriever(
     # RAG 检索方法输入鲁棒 意外方法直接抛错
     raise ValueError(
         f"Unsupported retriever_type: {retriever_type}. "
-        "Supported types: tfidf, embedding, hybrid."
+        "Supported types: tfidf, embedding, faiss, hybrid."
     )
 
 # factory 在 RAG 管道中的位置:

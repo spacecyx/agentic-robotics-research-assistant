@@ -37,7 +37,7 @@ def parse_args() -> argparse.Namespace:
         "--retriever-type",
         type=str,
         default="tfidf",
-        choices=["tfidf", "embedding"],
+        choices=["tfidf", "embedding", "hybrid", "faiss"],
         help="Retriever type used for RAG context retrieval.",
     )
 
@@ -47,6 +47,48 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default="sentence-transformers/all-MiniLM-L6-v2", 
         help="Embedding model name used by embedding retriever.",
+    )
+
+    # plus work ~ faiss 
+    parser.add_argument(
+        "--faiss-index-dir",
+        type=str,
+        default="",
+        help="Directory of FAISS index files. Default: data/index/<pdf_stem> when using faiss.",
+    )
+
+    parser.add_argument(
+        "--rebuild-faiss-index",
+        action="store_true",
+        help="Rebuild FAISS index even if it already exists.",
+    )
+
+    # plus work multi-query
+    parser.add_argument(
+        "--use-query-expansion",
+        action="store_true",
+        help="Enable heuristic query expansion and multi-query retrieval.",
+    )
+
+    parser.add_argument(
+        "--query-expansion-max-queries",
+        type=int,
+        default=4,
+        help="Maximum number of query variants used in multi-query retrieval.",
+    )
+
+    parser.add_argument(
+        "--multi-query-per-query-k",
+        type=int,
+        default=10,
+        help="Number of chunks retrieved for each expanded query.",
+    )
+
+    parser.add_argument(
+        "--multi-query-rrf-k",
+        type=int,
+        default=60,
+        help="RRF constant used when merging multi-query retrieval results.",
     )
 
     return parser.parse_args()
@@ -97,12 +139,25 @@ def main() -> None:
 
     graph = build_graph()
 
+    # FAISS 本地向量索引
+    faiss_index_dir = (
+        args.faiss_index_dir
+        if args.faiss_index_dir
+        else str(Path("data/index") / pdf_path.stem)
+    )
+
     initial_state: PaperState = {
-        "pdf_path": str(pdf_path),      # for Day 5 has added validate_pdf_path(), which need str
+        "pdf_path": str(pdf_path),
         "query": args.query,
         "top_k": args.top_k,
         "retriever_type": args.retriever_type,
         "embedding_model": args.embedding_model,
+        "faiss_index_dir": faiss_index_dir,
+        "rebuild_faiss_index": args.rebuild_faiss_index,
+        "use_query_expansion": args.use_query_expansion,
+        "query_expansion_max_queries": args.query_expansion_max_queries,
+        "multi_query_per_query_k": args.multi_query_per_query_k,
+        "multi_query_rrf_k": args.multi_query_rrf_k,
     }
 
     # 展示选择的模型
