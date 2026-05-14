@@ -1,54 +1,132 @@
 # 报告生成节点
-# 该节点故意不调用模型 | 不是每个节点都必须调用 LLM
-# 有些节点负责工具调用，有些节点负责格式化，有些节点负责路由，这是 Agent 工程中很重要的设计思想
+# 该节点不调用模型
+# 负责把 LangGraph 各节点产物整理成最终 Markdown 报告
 
+from typing import Any
 
 from app.states import PaperState
 from app.tools.report_writer import build_report_output_path, save_markdown_report
 
-# 在报告中体现出 retrieval evidence
-def format_retrieved_evidence(retrieval_results, max_chars_per_chunk: int = 1200) -> str:
+
+def format_retrieval_pipeline_config(state: PaperState) -> str:
+    """
+    格式化 RAG pipeline 配置。
+
+    目的：
+    让最终报告明确体现：
+    1. 使用了哪种 Retriever
+    2. 是否启用了 Reranker
+    3. 第一阶段召回多少候选
+    4. 第二阶段保留多少结果
+    5. ContextBuilder 的上下文限制
+    """
+
+    retriever_type = state.get("retriever_type", "tfidf")
+    embedding_model = state.get("embedding_model", "")
+    top_k = state.get("top_k", 5)
+
+    retriever_candidate_k = state.get("retriever_candidate_k", "")
+    reranker_type = state.get("reranker_type", "none")
+    reranker_top_k = state.get("reranker_top_k", "")
+    retriever_weight = state.get("retriever_weight", "")
+    hybrid_alpha = state.get("hybrid_alpha", "")
+
+    max_context_chars = state.get("max_context_chars", "")
+    max_chunk_chars = state.get("max_chunk_chars", "")
+
+    return f"""- Retriever Type: {retriever_type}
+- Embedding Model: {embedding_model}
+- Final Top-K: {top_k}
+- Retriever Candidate K: {retriever_candidate_k}
+- Reranker Type: {reranker_type}
+- Reranker Top-K: {reranker_top_k}
+- Retriever Weight: {retriever_weight}
+- Hybrid Alpha: {hybrid_alpha}
+- Max Context Chars: {max_context_chars}
+- Max Chunk Chars: {max_chunk_chars}"""
+
+
+def format_retrieved_evidence_details(
+    retrieval_results: list[Any],
+    max_chars_per_chunk: int = 1200,
+) -> str:
+    """
+    详细展示最终进入报告的检索结果。
+
+    注意：
+    retrieval_results 应该是经过 reranker 后的 final_results。
+    这里不仅展示 chunk 文本，还展示 reranker metadata。
+    """
+
     if not retrieval_results:
         return "No retrieved evidence available."
-    
+
     evidence_blocks = []
 
     for rank, retrieval_result in enumerate(retrieval_results, start=1):
         chunk = retrieval_result.chunk
         score = retrieval_result.score
+        source = getattr(retrieval_result, "source", "")
+        metadata = getattr(retrieval_result, "metadata", {}) or {}
 
         text = chunk.text.strip()
+
         if len(text) > max_chars_per_chunk:
-            text = text[:max_chars_per_chunk] + "\n..."
+            text = text[:max_chars_per_chunk].rstrip() + "\n..."
+
+        rank_before_rerank = metadata.get("rank_before_rerank", "N/A")
+        original_score = metadata.get("original_score", "N/A")
+        keyword_rerank_score = metadata.get("keyword_rerank_score", "N/A")
+        fusion_score = metadata.get("fusion_score", "N/A")
+        normalized_retriever_score = metadata.get("normalized_retriever_score", "N/A")
+        reranker = metadata.get("reranker", "N/A")
 
         block = f"""### Rank {rank}
-    - Chunk ID: {chunk.chunk_id}
-    - Score: {score:.4f}
-    - Char Range: {chunk.start_char} - {chunk.end_char}
 
-    Excerpt:
+- Chunk ID: {chunk.chunk_id}
+- Final Score: {score:.4f}
+- Source: {source}
+- Char Range: {chunk.start_char} - {chunk.end_char}
+- Reranker: {reranker}
+- Rank Before Rerank: {rank_before_rerank}
+- Original Retriever Score: {original_score}
+- Normalized Retriever Score: {normalized_retriever_score}
+- Keyword Rerank Score: {keyword_rerank_score}
+- Fusion Score: {fusion_score}
 
-    ```text
-    {text}
-    ```"""
+Excerpt:
+
+```text
+{text}
+```"""
+
         evidence_blocks.append(block)
 
     return "\n\n".join(evidence_blocks)
 
 
 def generate_report_node(state: PaperState) -> PaperState:
+    print(">>> running generate_report_node")
+
     pdf_path = state.get("pdf_path", "")
     query = state.get("query", "")
-    top_k = state.get("top_k", 5)
-    retriever_type = state.get("retriever_type", "tfidf")
-    embedding_model = state.get("embedding_model", "")
 
     paper_title = state.get("paper_title", "Unknown Paper")
     paper_summary = state.get("paper_summary", "")
     paper_critique = state.get("paper_critique", "")
-    retrieval_results = state.get("retrieval_results", [])
 
-    retrieved_evidence = format_retrieved_evidence(retrieval_results)
+    retrieval_results = state.get("retrieval_results", [])
+    retrieved_context = state.get("retrieved_context", "")
+    retrieval_evidence = state.get("retrieval_evidence", "")
+
+    pipeline_config = format_retrieval_pipeline_config(state)
+
+    retrieved_evidence_details = format_retrieved_evidence_details(
+        retrieval_results=retrieval_results,
+    )
+
+    if not retrieval_evidence:
+        retrieval_evidence = "No structured retrieval evidence available. Please check retrieve_context_node."
 
     final_report = f"""# Paper Analysis Report
 
@@ -56,17 +134,28 @@ def generate_report_node(state: PaperState) -> PaperState:
 
 - PDF: `{pdf_path}`
 - Query: {query}
-- Top-K: {top_k}
-- Retriever Type: {retriever_type}
-- Embedding Model: {embedding_model}
 
 ## Paper Title
 
 {paper_title}
 
-## Retrieved Evidence
+## Retrieval Pipeline
 
-{retrieved_evidence}
+{pipeline_config}
+
+## Retrieved Evidence Metadata
+
+{retrieval_evidence}
+
+## Retrieved Evidence Details
+
+{retrieved_evidence_details}
+
+## Retrieved Context Passed to LLM
+
+```text
+{retrieved_context}
+```
 
 ## Paper Summary
 
@@ -78,7 +167,11 @@ def generate_report_node(state: PaperState) -> PaperState:
 
 ## Final Notes
 
-This report was generated by a LangGraph-based RAG pipeline. The analysis is grounded in the retrieved paper chunks listed above.
+This report was generated by a LangGraph-based RAG pipeline.
+
+The current pipeline includes candidate retrieval, optional reranking, context construction, and evidence-aware report generation.
+
+The analysis is grounded in the retrieved paper chunks listed above.
 """
 
     output_path = build_report_output_path(pdf_path)
