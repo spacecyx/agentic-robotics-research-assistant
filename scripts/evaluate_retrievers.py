@@ -12,6 +12,8 @@ from app.nodes.load_pdf import load_pdf_node
 from app.nodes.split_text import split_text_node
 from app.tools.retrievers.factory import create_retriever
 from app.tools.rerankers.factory import create_reranker
+from app.tools.query_expansion import HeuristicQueryExpander
+from app.tools.retrievers.multi_query_retriever import MultiQueryRetriever
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,6 +75,27 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=0.7,
         help="Weight of original retriever score in score_fusion reranker.",
+    )
+
+    parser.add_argument(
+        "--query-expansion-max-queries",
+        type=int,
+        default=4,
+        help="Maximum number of query variants used in multi-query retrieval.",
+    )
+
+    parser.add_argument(
+        "--multi-query-per-query-k",
+        type=int,
+        default=10,
+        help="Number of chunks retrieved for each expanded query.",
+    )
+
+    parser.add_argument(
+        "--multi-query-rrf-k",
+        type=int,
+        default=60,
+        help="RRF constant used when merging multi-query retrieval results.",
     )
 
     parser.add_argument(
@@ -240,6 +263,73 @@ def evaluate_method(
         "avg_rank": mean(ranks),
     }
 
+'''
+def get_display_method_name(method_name: str) -> str:
+    """
+    将较长的方法名压缩成适合命令行展示的短名称。
+    """
+
+    aliases = {
+        "tfidf": "tfidf",
+        "embedding": "embedding",
+        "hybrid": "hybrid",
+        "tfidf+keyword_rerank": "tfidf+kw-rerank",
+        "hybrid+score_fusion_rerank": "hybrid+fusion",
+        "hybrid+query_expansion": "hybrid+qe",
+        "hybrid+query_expansion+score_fusion_rerank": "hybrid+qe+fusion",
+    }
+
+    return aliases.get(method_name, method_name)
+
+
+def print_summary_table(results: list[dict[str, Any]], top_k: int) -> None:
+    hit_k_key = f"hit@{top_k}"
+    mrr_k_key = f"mrr@{top_k}"
+
+    method_names = [
+        get_display_method_name(result["method"])
+        for result in results
+    ]
+
+    method_width = max(
+        len("Method"),
+        max(len(name) for name in method_names),
+    )
+
+    num_width = 9
+
+    print("\n========== RETRIEVAL EVALUATION ==========\n")
+
+    header = (
+        f"{'Method':<{method_width}}  "
+        f"{'Hit@1':>{num_width}}  "
+        f"{'Hit@3':>{num_width}}  "
+        f"{f'Hit@{top_k}':>{num_width}}  "
+        f"{f'MRR@{top_k}':>{num_width}}  "
+        f"{'AvgRank':>{num_width}}"
+    )
+
+    print(header)
+    print("-" * len(header))
+
+    for result in results:
+        method_name = get_display_method_name(result["method"])
+
+        print(
+            f"{method_name:<{method_width}}  "
+            f"{result['hit@1']:>{num_width}.3f}  "
+            f"{result['hit@3']:>{num_width}.3f}  "
+            f"{result[hit_k_key]:>{num_width}.3f}  "
+            f"{result[mrr_k_key]:>{num_width}.3f}  "
+            f"{result['avg_rank']:>{num_width}.3f}"
+        )
+
+    print("\nLegend:")
+    print("- kw-rerank: keyword reranker")
+    print("- fusion: score fusion reranker")
+    print("- qe: query expansion / multi-query retrieval")
+'''
+
 
 def print_summary_table(results: list[dict[str, Any]], top_k: int) -> None:
     hit_k_name = f"hit@{top_k}"
@@ -319,6 +409,9 @@ def main() -> None:
     print(f"Hybrid Candidate-K: {args.candidate_k}")
     print(f"Rerank Candidate-K: {args.rerank_candidate_k}")
     print(f"Retriever Weight: {args.retriever_weight}")
+    print(f"Query Expansion Max Queries: {args.query_expansion_max_queries}")
+    print(f"Multi-query Per-query K: {args.multi_query_per_query_k}")
+    print(f"Multi-query RRF K: {args.multi_query_rrf_k}")
     print(
         "\nNote: This is keyword-based weak evaluation. "
         "It checks whether retrieved chunks contain expected keywords, "
@@ -342,6 +435,16 @@ def main() -> None:
         embedding_model=args.embedding_model,
         alpha=args.alpha,
         candidate_k=args.candidate_k,
+    )
+
+    query_expander = HeuristicQueryExpander()
+
+    hybrid_query_expansion_retriever = MultiQueryRetriever(
+        base_retriever=hybrid_retriever,
+        query_expander=query_expander,
+        max_queries=args.query_expansion_max_queries,
+        per_query_k=args.multi_query_per_query_k,
+        rrf_k=args.multi_query_rrf_k,
     )
 
     keyword_reranker = create_reranker(
@@ -377,6 +480,16 @@ def main() -> None:
         {
             "method_name": "hybrid+score_fusion_rerank",
             "retriever": hybrid_retriever,
+            "reranker": score_fusion_reranker,
+        },
+        {
+            "method_name": "hybrid+query_expansion",
+            "retriever": hybrid_query_expansion_retriever,
+            "reranker": None,
+        },
+        {
+            "method_name": "hybrid+query_expansion+score_fusion_rerank",
+            "retriever": hybrid_query_expansion_retriever,
             "reranker": score_fusion_reranker,
         },
     ]

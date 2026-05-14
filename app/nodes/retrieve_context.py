@@ -2,6 +2,8 @@ from app.states import PaperState
 from app.tools.retrievers.factory import create_retriever
 from app.tools.rerankers.factory import create_reranker
 from app.tools.context_builder import ContextBuilder
+from app.tools.retrievers.multi_query_retriever import MultiQueryRetriever
+from app.tools.query_expansion import HeuristicQueryExpander
 
 
 def retrieve_context_node(state: PaperState) -> PaperState:
@@ -25,6 +27,16 @@ def retrieve_context_node(state: PaperState) -> PaperState:
     # Hybrid retriever 参数
     hybrid_alpha = state.get("hybrid_alpha", 0.6)
 
+    # FAISS retriever 参数 (plus)
+    faiss_index_dir = state.get("faiss_index_dir", "")
+    rebuild_faiss_index = state.get("rebuild_faiss_index", False)
+
+    # Query Expansion 参数
+    use_query_expansion = state.get("use_query_expansion", False)
+    query_expansion_max_queries = state.get("query_expansion_max_queries", 4)
+    multi_query_per_query_k = state.get("multi_query_per_query_k", retriever_candidate_k)
+    multi_query_rrf_k = state.get("multi_query_rrf_k", 60)
+
     # Reranker 参数
     reranker_type = state.get("reranker_type", "score_fusion")
     reranker_top_k = state.get("reranker_top_k", top_k)
@@ -34,21 +46,46 @@ def retrieve_context_node(state: PaperState) -> PaperState:
     max_context_chars = state.get("max_context_chars", 4000)
     max_chunk_chars = state.get("max_chunk_chars", 1200)
 
-    # 1. 第一阶段召回
-    retriever = create_retriever(
+    # 1. 创建基础 retriever
+    base_retriever = create_retriever(
         retriever_type=retriever_type,
         chunks=chunks,
         embedding_model=embedding_model,
         alpha=hybrid_alpha,
         candidate_k=retriever_candidate_k,
+        faiss_index_dir=faiss_index_dir or None,
+        rebuild_faiss_index=rebuild_faiss_index,
     )
 
-    retrieved_results = retriever.search(
-        query=query,
-        top_k=retriever_candidate_k,
-    )
+    # 2. 可选：Query Expansion + Multi-query retrieval
+    expanded_queries = [query]
 
-    # 2. 第二阶段重排
+    if use_query_expansion:
+        query_expander = HeuristicQueryExpander()
+
+        retriever = MultiQueryRetriever(
+            base_retriever=base_retriever,
+            query_expander=query_expander,
+            max_queries=query_expansion_max_queries,
+            per_query_k=multi_query_per_query_k,
+            rrf_k=multi_query_rrf_k,
+        )
+
+        retrieved_results = retriever.search(
+            query=query,
+            top_k=retriever_candidate_k,
+        )
+
+        expanded_queries = retriever.last_expanded_queries
+    else:
+        retriever = base_retriever
+
+        retrieved_results = retriever.search(
+            query=query,
+            top_k=retriever_candidate_k,
+        )
+
+    # 3. 第二阶段重排
     if reranker_type and reranker_type.lower().strip() not in {"none", "no", "disable"}:
         reranker = create_reranker(
             reranker_type=reranker_type,
@@ -63,7 +100,7 @@ def retrieve_context_node(state: PaperState) -> PaperState:
     else:
         final_results = retrieved_results[:top_k]
 
-    # 3. 构造 LLM 上下文
+    # 4. 构造 LLM 上下文
     context_builder = ContextBuilder(
         max_context_chars=max_context_chars,
         max_chunk_chars=max_chunk_chars,
@@ -88,4 +125,11 @@ def retrieve_context_node(state: PaperState) -> PaperState:
         "retrieval_results": final_results,
         "retrieved_context": built_context.context,
         "retrieval_evidence": retrieval_evidence,
+        "faiss_index_dir": faiss_index_dir,
+        "rebuild_faiss_index": rebuild_faiss_index,
+        "use_query_expansion": use_query_expansion,
+        "query_expansion_max_queries": query_expansion_max_queries,
+        "multi_query_per_query_k": multi_query_per_query_k,
+        "multi_query_rrf_k": multi_query_rrf_k,
+        "expanded_queries": expanded_queries,
     }

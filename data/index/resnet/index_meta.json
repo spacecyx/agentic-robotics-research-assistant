@@ -1,0 +1,8 @@
+{
+  "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+  "num_chunks": 36,
+  "embedding_dim": 384,
+  "index_type": "IndexFlatIP",
+  "normalize_embeddings": true,
+  "chunks_fingerprint": "4d1cf8858fb0bde6cb776efea5aedbc8"
+}

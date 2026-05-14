@@ -277,6 +277,106 @@ tfidf+keyword_rerank
 hybrid+score_fusion_rerank
 ```
 
+### Plus Work
+
+Added local FAISS vector indexing and heuristic query expansion to improve retrieval efficiency and recall robustness.
+
+Main features:
+
+- Added `FaissVectorStore` for local vector index build, save, load, and search
+- Added `FaissRetriever` as a persistent embedding retrieval backend
+- Added FAISS index files:
+  - `faiss.index`
+  - `chunks.json`
+  - `embeddings.npy`
+  - `index_meta.json`
+- Added embedding cache to avoid recomputing document embeddings on every run
+- Added chunk fingerprint checking to avoid loading mismatched indexes
+- Added `HeuristicQueryExpander` for rule-based query expansion
+- Added `MultiQueryRetriever` for multi-query retrieval, result merge, and chunk deduplication
+- Added Reciprocal Rank Fusion style scoring for merging multi-query retrieval results
+- Updated the main RAG workflow to optionally use query expansion before reranking
+- Extended retrieval evaluation with:
+  - `hybrid+query_expansion`
+  - `hybrid+query_expansion+score_fusion_rerank`
+
+FAISS indexing workflow:
+
+```text
+PDF
+        ↓
+load_pdf_node
+        ↓
+split_text_node
+        ↓
+SentenceTransformer embeddings
+        ↓
+FAISS IndexFlatIP
+        ↓
+save faiss.index + chunks.json + embeddings.npy + index_meta.json
+```
+
+Query expansion workflow:
+
+```text
+original query
+        ↓
+HeuristicQueryExpander
+        ↓
+multiple query variants
+        ↓
+base retriever.search() for each query
+        ↓
+merge results
+        ↓
+deduplicate by chunk_id
+        ↓
+reranker
+        ↓
+ContextBuilder
+        ↓
+retrieved context + structured evidence
+```
+
+Updated retrieval evaluation methods:
+
+```text
+tfidf
+embedding
+hybrid
+tfidf+keyword_rerank
+hybrid+score_fusion_rerank
+hybrid+query_expansion
+hybrid+query_expansion+score_fusion_rerank
+```
+
+Current full workflow:
+
+```text
+PDF + query
+        ↓
+load_pdf_node
+        ↓
+split_text_node
+        ↓
+Retriever Factory
+        ↓
+TF-IDF / Embedding / Hybrid / FAISS Retriever
+        ↓
+optional Query Expansion + MultiQueryRetriever
+        ↓
+optional Reranker
+        ↓
+ContextBuilder
+        ↓
+retrieved context + structured evidence
+        ↓
+LLM-based summary / critique / answer generation
+        ↓
+Markdown report
+```
+
+
 ## Test
 
 Test the PDF loader:
@@ -313,12 +413,78 @@ python -m scripts.test_pipeline_day6 \
   # --retriever-type tfidf
 ```
 
-Evaluate different RAG method:
+Compare retrievers:
+
 ```bash
-python -m scripts.evaluate_retrievers --pdf_path data/resnet.pdf --top_k 3
+python -m scripts.compare_retrievers \
+  --pdf data/resnet.pdf \
+  --query "What is the degradation problem in ResNet?" \
+  --top-k 5 \
+  --retriever-type hybrid
 ```
 
-## Run(present)
+Evaluate retrieval performance:
+
+```bash
+python -m scripts.evaluate_retrievers \
+  --pdf data/resnet.pdf \
+  --eval-json data/eval_queries.json \
+  --top-k 5 \
+  --embedding-model sentence-transformers/all-MiniLM-L6-v2 \
+  --alpha 0.6 \
+  --candidate-k 20 \
+  --rerank-candidate-k 15 \
+  --retriever-weight 0.7 \
+  --query-expansion-max-queries 4 \
+  --multi-query-per-query-k 10 \
+  --multi-query-rrf-k 60
+```
+
+Save retrieval evaluation results:
+
+```bash
+python -m scripts.evaluate_retrievers \
+  --pdf data/resnet.pdf \
+  --eval-json data/eval_queries.json \
+  --top-k 5 \
+  --output-csv outputs/retriever_eval_results.csv
+```
+
+Build a FAISS index:
+
+```bash
+python -m scripts.build_faiss_index \
+  --pdf data/resnet.pdf \
+  --index-dir data/index/resnet \
+  --embedding-model sentence-transformers/all-MiniLM-L6-v2
+```
+
+Test FAISS retrieval:
+
+```bash
+python -m scripts.test_faiss_retriever \
+  --pdf data/resnet.pdf \
+  --query "What is residual learning and why does ResNet use shortcut connections?" \
+  --top-k 5 \
+  --index-dir data/index/resnet
+```
+
+Test query expansion:
+
+```bash
+python -m scripts.test_query_expansion \
+  --pdf data/resnet.pdf \
+  --query "What are the main method and limitations of ResNet?" \
+  --retriever-type hybrid \
+  --top-k 5 \
+  --per-query-k 8 \
+  --max-queries 4
+```
+
+## Run
+
+Run the current paper RAG pipeline:
+
 ```bash
 python -m app.main \
   --pdf data/resnet.pdf \
@@ -326,7 +492,18 @@ python -m app.main \
   --top-k 10
 ```
 
-## Run with TF-IDF
+Run with TF-IDF retrieval:
+
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What is the degradation problem in deep neural networks?" \
+  --top-k 5 \
+  --retriever-type tfidf
+```
+
+Run with Embedding retrieval:
+
 ```bash
 python -m app.main \
   --pdf data/resnet.pdf \
@@ -335,14 +512,55 @@ python -m app.main \
   --retriever-type embedding
 ```
 
-## Run with Embedding Retrieval
+Run with Hybrid retrieval:
+
 ```bash
 python -m app.main \
   --pdf data/resnet.pdf \
   --query "What is the degradation problem in deep neural networks?" \
   --top-k 5 \
-  --retriever-type embedding
+  --retriever-type hybrid
 ```
+
+Run with FAISS retrieval:
+
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What is residual learning and why does ResNet use shortcut connections?" \
+  --top-k 3 \
+  --retriever-type faiss \
+  --faiss-index-dir data/index/resnet
+```
+
+Run with query expansion:
+
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What are the main method and limitations of ResNet?" \
+  --top-k 3 \
+  --retriever-type hybrid \
+  --use-query-expansion \
+  --query-expansion-max-queries 4 \
+  --multi-query-per-query-k 8
+```
+
+Run with FAISS retrieval and query expansion:
+
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What are the main method and limitations of ResNet?" \
+  --top-k 3 \
+  --retriever-type faiss \
+  --faiss-index-dir data/index/resnet \
+  --use-query-expansion \
+  --query-expansion-max-queries 4 \
+  --multi-query-per-query-k 8
+```
+
+
 ## Output
 
 Generated reports are saved under:
@@ -350,3 +568,10 @@ Generated reports are saved under:
 ```text
 outputs/
 ```
+
+## Current limitations
+
+- FAISS currently uses a local CPU index, which is enough for paper-level RAG but not optimized for large-scale production retrieval
+- Query expansion is heuristic-based and may introduce noise for some broad or ambiguous queries
+- The evaluation is still keyword-based weak evaluation, not strict semantic evaluation
+- Cross-Encoder reranking and RAGAS-style answer evaluation are not yet implemented

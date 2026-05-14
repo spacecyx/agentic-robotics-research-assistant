@@ -11,14 +11,6 @@ from app.tools.report_writer import build_report_output_path, save_markdown_repo
 def format_retrieval_pipeline_config(state: PaperState) -> str:
     """
     格式化 RAG pipeline 配置。
-
-    目的：
-    让最终报告明确体现：
-    1. 使用了哪种 Retriever
-    2. 是否启用了 Reranker
-    3. 第一阶段召回多少候选
-    4. 第二阶段保留多少结果
-    5. ContextBuilder 的上下文限制
     """
 
     retriever_type = state.get("retriever_type", "tfidf")
@@ -34,6 +26,14 @@ def format_retrieval_pipeline_config(state: PaperState) -> str:
     max_context_chars = state.get("max_context_chars", "")
     max_chunk_chars = state.get("max_chunk_chars", "")
 
+    faiss_index_dir = state.get("faiss_index_dir", "")
+    rebuild_faiss_index = state.get("rebuild_faiss_index", False)
+
+    use_query_expansion = state.get("use_query_expansion", False)
+    query_expansion_max_queries = state.get("query_expansion_max_queries", "")
+    multi_query_per_query_k = state.get("multi_query_per_query_k", "")
+    multi_query_rrf_k = state.get("multi_query_rrf_k", "")
+
     return f"""- Retriever Type: {retriever_type}
 - Embedding Model: {embedding_model}
 - Final Top-K: {top_k}
@@ -43,7 +43,51 @@ def format_retrieval_pipeline_config(state: PaperState) -> str:
 - Retriever Weight: {retriever_weight}
 - Hybrid Alpha: {hybrid_alpha}
 - Max Context Chars: {max_context_chars}
-- Max Chunk Chars: {max_chunk_chars}"""
+- Max Chunk Chars: {max_chunk_chars}
+- FAISS Index Dir: {faiss_index_dir}
+- Rebuild FAISS Index: {rebuild_faiss_index}
+- Use Query Expansion: {use_query_expansion}
+- Query Expansion Max Queries: {query_expansion_max_queries}
+- Multi-query Per-query K: {multi_query_per_query_k}
+- Multi-query RRF K: {multi_query_rrf_k}"""
+
+
+def format_expanded_queries(state: PaperState) -> str:
+    """
+    格式化 Query Expansion 生成的 query variants。
+    """
+
+    expanded_queries = state.get("expanded_queries", [])
+
+    if not expanded_queries:
+        return "No query expansion used."
+
+    lines = []
+
+    for index, query in enumerate(expanded_queries, start=1):
+        lines.append(f"{index}. {query}")
+
+    return "\n".join(lines)
+
+
+def format_list_preview(values: Any, max_items: int = 5) -> str:
+    """
+    安全展示 metadata 中的 list 字段，避免报告过长。
+    """
+
+    if not values:
+        return "N/A"
+
+    if not isinstance(values, list):
+        return str(values)
+
+    preview = values[:max_items]
+
+    suffix = ""
+    if len(values) > max_items:
+        suffix = f" ... ({len(values)} total)"
+
+    return f"{preview}{suffix}"
 
 
 def format_retrieved_evidence_details(
@@ -53,9 +97,12 @@ def format_retrieved_evidence_details(
     """
     详细展示最终进入报告的检索结果。
 
-    注意：
-    retrieval_results 应该是经过 reranker 后的 final_results。
-    这里不仅展示 chunk 文本，还展示 reranker metadata。
+    retrieval_results 应该是经过：
+    1. first-stage retrieval
+    2. optional query expansion / multi-query retrieval
+    3. optional reranking
+
+    之后的 final_results。
     """
 
     if not retrieval_results:
@@ -74,6 +121,7 @@ def format_retrieved_evidence_details(
         if len(text) > max_chars_per_chunk:
             text = text[:max_chars_per_chunk].rstrip() + "\n..."
 
+        # Reranker metadata
         rank_before_rerank = metadata.get("rank_before_rerank", "N/A")
         original_score = metadata.get("original_score", "N/A")
         keyword_rerank_score = metadata.get("keyword_rerank_score", "N/A")
@@ -81,18 +129,51 @@ def format_retrieved_evidence_details(
         normalized_retriever_score = metadata.get("normalized_retriever_score", "N/A")
         reranker = metadata.get("reranker", "N/A")
 
+        # FAISS / embedding metadata
+        faiss_score = metadata.get("faiss_score", "N/A")
+        embedding_score = metadata.get("embedding_score", "N/A")
+        index_dir = metadata.get("index_dir", "N/A")
+
+        # Multi-query metadata
+        multi_query = metadata.get("multi_query", False)
+        matched_query_count = metadata.get("matched_query_count", "N/A")
+        matched_queries = metadata.get("matched_queries", [])
+        original_ranks = metadata.get("original_ranks", [])
+        original_scores = metadata.get("original_scores", [])
+        best_original_rank = metadata.get("best_original_rank", "N/A")
+        best_original_score = metadata.get("best_original_score", "N/A")
+
         block = f"""### Rank {rank}
 
 - Chunk ID: {chunk.chunk_id}
 - Final Score: {score:.4f}
 - Source: {source}
 - Char Range: {chunk.start_char} - {chunk.end_char}
+
+Retrieval / Rerank Metadata:
+
 - Reranker: {reranker}
 - Rank Before Rerank: {rank_before_rerank}
 - Original Retriever Score: {original_score}
 - Normalized Retriever Score: {normalized_retriever_score}
 - Keyword Rerank Score: {keyword_rerank_score}
 - Fusion Score: {fusion_score}
+
+FAISS / Embedding Metadata:
+
+- FAISS Score: {faiss_score}
+- Embedding Score: {embedding_score}
+- FAISS Index Dir: {index_dir}
+
+Multi-query Metadata:
+
+- Multi-query: {multi_query}
+- Matched Query Count: {matched_query_count}
+- Best Original Rank: {best_original_rank}
+- Best Original Score: {best_original_score}
+- Original Ranks: {format_list_preview(original_ranks)}
+- Original Scores: {format_list_preview(original_scores)}
+- Matched Queries: {format_list_preview(matched_queries)}
 
 Excerpt:
 
@@ -120,6 +201,7 @@ def generate_report_node(state: PaperState) -> PaperState:
     retrieval_evidence = state.get("retrieval_evidence", "")
 
     pipeline_config = format_retrieval_pipeline_config(state)
+    expanded_queries = format_expanded_queries(state)
 
     retrieved_evidence_details = format_retrieved_evidence_details(
         retrieval_results=retrieval_results,
@@ -142,6 +224,10 @@ def generate_report_node(state: PaperState) -> PaperState:
 ## Retrieval Pipeline
 
 {pipeline_config}
+
+## Expanded Queries
+
+{expanded_queries}
 
 ## Retrieved Evidence Metadata
 
@@ -169,7 +255,18 @@ def generate_report_node(state: PaperState) -> PaperState:
 
 This report was generated by a LangGraph-based RAG pipeline.
 
-The current pipeline includes candidate retrieval, optional reranking, context construction, and evidence-aware report generation.
+The current pipeline includes:
+
+```text
+PDF loading
+  -> text splitting
+  -> candidate retrieval
+  -> optional FAISS vector retrieval
+  -> optional query expansion / multi-query retrieval
+  -> optional reranking
+  -> context construction
+  -> evidence-aware report generation
+```
 
 The analysis is grounded in the retrieved paper chunks listed above.
 """

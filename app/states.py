@@ -30,12 +30,23 @@ class PaperState(TypedDict, total=False):
     chunks: list[Any]
     # chunks: list[TextChunk]
 
+    # FAISS
+    faiss_index_dir: str
+    rebuild_faiss_index: bool
+    
     # Retrieval
     hybrid_alpha: float
     retrieval_results: list[Any]
     retrieved_context: str
     max_context_chars: int
     max_chunk_chars: int
+
+    # Query Expansion / Multi-query retrieval
+    use_query_expansion: bool
+    query_expansion_max_queries: int
+    multi_query_per_query_k: int
+    multi_query_rrf_k: int
+    expanded_queries: list[str]
 
     # Reranking / Context building 
     reranker_type: str              # keyword / score_fusion / none
