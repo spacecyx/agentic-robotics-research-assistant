@@ -206,7 +206,7 @@ Top-K retrieved chunks
 Hit@K / MRR@K evaluation
 ```
 
-### Closing Stage
+### Closing Stage (basic)
 
 Finished the core closing tasks for the paper RAG system.
 
@@ -316,6 +316,27 @@ python -m scripts.test_pipeline_day6 \
 Evaluate different RAG method:
 ```bash
 python -m scripts.evaluate_retrievers --pdf_path data/resnet.pdf --top_k 3
+```
+
+Evaluation of retrieval performance using TF-IDF, Embedding, Hybrid, and Rerank methods:
+```bash
+python -m scripts.evaluate_retrievers \
+  --pdf data/resnet.pdf \
+  --eval-json data/eval_queries.json \
+  --top-k 5 \
+  --embedding-model sentence-transformers/all-MiniLM-L6-v2 \
+  --alpha 0.6 \
+  --candidate-k 20 \
+  --rerank-candidate-k 15 \
+  --retriever-weight 0.7
+```
+if you wanna save the result:
+```bash
+python -m scripts.evaluate_retrievers \
+  --pdf data/resnet.pdf \
+  --eval-json data/eval_queries.json \
+  --top-k 5 \
+  --output-csv outputs/retriever_eval_results.csv
 ```
 
 ## Run(present)
