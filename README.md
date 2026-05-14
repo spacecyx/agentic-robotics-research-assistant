@@ -206,7 +206,7 @@ Top-K retrieved chunks
 Hit@K / MRR@K evaluation
 ```
 
-### Closing Stage
+### Closing Stage (basic)
 
 Finished the core closing tasks for the paper RAG system.
 
