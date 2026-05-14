@@ -31,8 +31,18 @@ class PaperState(TypedDict, total=False):
     # chunks: list[TextChunk]
 
     # Retrieval
+    hybrid_alpha: float
     retrieval_results: list[Any]
     retrieved_context: str
+    max_context_chars: int
+    max_chunk_chars: int
+
+    # Reranking / Context building 
+    reranker_type: str              # keyword / score_fusion / none
+    reranker_top_k: int             # 重排后保留多少 chunk
+    retriever_candidate_k: int      # 第一阶段召回多少候选 chunk
+    retriever_weight: float         # ScoreFusionReranker 中原始检索分数的权重
+    retrieval_evidence: str         # ContextBuilder 生成的 evidence markdown
 
     # LLM outputs/analysis
     paper_summary: str

@@ -1,50 +1,55 @@
 from app.states import PaperState
-from app.tools.simple_retriever import retrieve_top_k, RetrievalResult
+from app.tools.retrievers.factory import create_retriever
 
 
-def format_retrieval_results(results: list[RetrievalResult]) -> str:
-    """
-    Format retrieved chunks into a prompt-friendly context string.
-    """
+def format_retrieved_context(retrieval_results) -> str:
+    context_blocks = []
 
-    formatted_chunks: list[str] = []
+    for rank, retrieval_result in enumerate(retrieval_results, start=1):
+        chunk = retrieval_result.chunk
+        score = retrieval_result.score
 
-    for rank, result in enumerate(results, start=1):
-        chunk = result.chunk
-
-        formatted_chunks.append(
-            f"[Rank {rank} | Chunk {chunk.chunk_id} | Score: {result.score:.4f} | "
-            f"Char Range: {chunk.start_char}-{chunk.end_char}]\n"
+        block = (
+            f"[Rank {rank} | Chunk ID: {chunk.chunk_id} | "
+            f"Score: {score:.4f} | Char Range: {chunk.start_char}-{chunk.end_char}]\n"
             f"{chunk.text}"
         )
 
-    return "\n\n".join(formatted_chunks)
+        context_blocks.append(block)
+
+    return "\n\n".join(context_blocks)
 
 
-def retrieve_context_node(state: PaperState) -> dict:
-    """
-    Retrieve top-k relevant chunks based on the user query.
-    """
+def retrieve_context_node(state: PaperState) -> PaperState:
     print(">>> running retrieve_context_node")
 
-    query = state.get("query", "").strip()
-    chunks = state.get("chunks", [])
+    query = state["query"]
+    chunks = state["chunks"]
 
-    if not query:
-        raise ValueError("query must not be empty. Please provide a query in initial_state.")
-
-    if not chunks:
-        raise ValueError("No chunks found in state. Please check split_text_node output.")
-
-    retrieval_results = retrieve_top_k(
-        query=query,
-        chunks=chunks,
-        top_k=3,
+    top_k = state.get("top_k", 5)
+    retriever_type = state.get("retriever_type", "tfidf")       # default_type:tfidf
+    embedding_model = state.get(
+        "embedding_model",
+        "sentence-transformers/all-MiniLM-L6-v2",
     )
 
-    retrieved_context = format_retrieval_results(retrieval_results)
+    # 不再关心底层是 TF-IDF 还是 Embedding
+    retriever = create_retriever(
+        retriever_type=retriever_type,
+        chunks=chunks,
+        embedding_model=embedding_model,
+    )
+
+    retrieval_results = retriever.search(
+        query=query,
+        top_k=top_k,
+    )
+
+    retrieved_context = format_retrieved_context(retrieval_results)
 
     return {
-        "retrieval_results": retrieval_results,     # 保留结构化检索结果，方便调试
-        "retrieved_context": retrieved_context,     # 转成字符串，方便后续 LLM prompt 使用
+        "retriever_type": retriever_type,
+        "embedding_model": embedding_model,
+        "retrieval_results": retrieval_results,
+        "retrieved_context": retrieved_context,
     }
