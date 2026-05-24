@@ -1,0 +1,64 @@
+大纲可以，请根据该大纲重写 README.md。
+
+本次任务目标：
+将 README.md 从学习日志式文档改造成适合 GitHub 展示和实习求职的项目说明文档。
+
+允许修改：
+- README.md
+
+不允许修改：
+- Python 源码
+- scripts
+- data
+- outputs
+- docs/project_audit.md
+- 配置文件
+
+写作要求：
+1. 使用中文。
+2. 语气专业、克制、适合 GitHub 和实习求职展示。
+3. 开头明确项目定位：
+   - 面向机器人 / SLAM / 3D 感知论文阅读
+   - LangGraph-based RAG workflow
+   - evidence-aware report generation
+   - evaluation-driven RAG improvement
+4. 不要把项目包装成 production-level autonomous agent system。
+5. 不要声称已经具备尚未实现的能力，例如：
+   - 完整 autonomous planning
+   - 多智能体协作
+   - 长期记忆
+   - 生产级部署
+   - page-level citation
+   - section-aware chunking
+   - faithfulness evaluation
+   - Web UI
+6. 如果提到这些能力，只能放在 Current Limitations 或 Roadmap 中。
+7. README 中的命令必须基于当前项目实际 CLI 参数，不确定时请先检查代码，不要猜。
+8. Evaluation 表格请基于 outputs/eval 下最新的 retriever_eval_*.md 或 retriever_eval_*.csv。
+9. 如果最新评估文件中的数值和大纲示例不一致，以实际文件为准。
+10. 保留必要的 Quick Start、项目结构、评估说明、限制和 Roadmap。
+11. 删除或弱化原 README 中 Day 1 / Day 2 / Day 3 等学习流水账内容。
+12. 不要写得过长，README 应该让面试官 3 分钟内看懂项目价值。
+
+建议 README 结构：
+
+# Agentic Robotics Research Assistant
+
+## Project Overview
+## Why This Project
+## Key Features
+## System Architecture
+## RAG Pipeline
+## Evaluation
+## Quick Start
+## Example Output
+## Project Structure
+## Current Limitations
+## Roadmap
+
+完成后请输出：
+1. README.md 的主要改动摘要。
+2. 你引用了哪个 evaluation 文件。
+3. README 中包含了哪些运行命令。
+4. 是否修改了 README.md 以外的文件。
+5. 建议我运行哪些命令验证 README 中的命令。

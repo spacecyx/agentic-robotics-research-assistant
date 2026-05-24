@@ -1,0 +1,88 @@
+请按照刚才的分析，开始实现 scripts/evaluate_retrievers.py 的增强。
+
+本次实现目标：
+
+一、增加 latency 指标
+
+请使用 time.perf_counter() 统计每个 method 在每个 query 上的检索耗时。
+
+统计范围：
+- 不要把 retriever 初始化、embedding 模型加载、FAISS 索引加载或构建时间算入 per-query latency。
+- per-query latency 应统计一次 query evaluation 中实际检索流程的耗时。
+- 如果某个 method 包含 query expansion、multi-query retrieval、rerank，则 latency 应包含这些步骤，因为这是该 method 的真实推理成本。
+- 对每个 method 汇总：
+  - avg_latency_ms
+  - min_latency_ms
+  - max_latency_ms
+  - p50_latency_ms
+  - p95_latency_ms
+
+二、稳定保存结果
+
+请将评估结果保存到：
+
+outputs/eval/
+
+每次运行生成带时间戳的文件：
+
+- outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.csv
+- outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.md
+
+CSV 至少包含 method-level summary：
+
+字段建议：
+- method
+- num_queries
+- hit_at_1
+- hit_at_3
+- hit_at_k
+- mrr_at_k
+- avg_rank
+- avg_latency_ms
+- min_latency_ms
+- max_latency_ms
+- p50_latency_ms
+- p95_latency_ms
+
+如果当前脚本已经支持 per-query detail，也可以额外保存 detail CSV；如果不支持，不要为了这个大重构。
+
+Markdown 文件要求：
+- 包含标题，例如 # Retriever Evaluation Results
+- 包含运行时间
+- 包含 eval queries 文件路径
+- 包含 top_k
+- 包含评估方法列表
+- 包含 method summary 表格
+- 包含简短说明：
+  - latency 不包含 retriever 初始化 / 模型加载时间
+  - latency 包含 method 内部 query expansion / rerank / retrieval 成本
+  - 当前 relevance 判断如仍是 keyword-based weak evaluation，需要在文档中标注 limitation
+
+三、CLI 参数
+
+在不破坏已有参数的前提下，新增或确认支持：
+
+- --output-dir，默认 outputs/eval
+- --save-results，默认开启或显式开启均可，但要保持当前命令兼容
+- 如果你认为不需要 --save-results，也可以默认每次保存，但请在代码和输出中说明保存路径
+
+四、代码约束
+
+严格限制：
+1. 只修改 scripts/evaluate_retrievers.py。
+2. 不要修改 retriever 实现。
+3. 不要修改 app/nodes。
+4. 不要修改 app/tools/retrievers。
+5. 不要修改 eval_queries.json。
+6. 不要引入 pandas、numpy 等新依赖；优先使用 Python 标准库 csv、statistics、datetime、pathlib。
+7. 保持现有命令行参数兼容。
+8. 保持现有终端输出风格，如果可以，在原表格中增加 latency 列。
+
+五、完成后输出
+
+请输出：
+1. 修改了哪些函数。
+2. 新增了哪些 CLI 参数。
+3. latency 的统计范围。
+4. CSV / Markdown 保存路径。
+5. 建议我运行的验证命令。

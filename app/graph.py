@@ -3,11 +3,9 @@ from langgraph.graph import StateGraph, END
 from app.states import PaperState
 from app.nodes.load_pdf import load_pdf_node
 from app.nodes.split_text import split_text_node
-# app.nodes.retrieve_context_oldest/old
 from app.nodes.retrieve_context import retrieve_context_node
 from app.nodes.summarize_paper import summarize_paper_node
 from app.nodes.critique_paper import critique_paper_node
-# from app.nodes.generate_report_old import generate_report_node
 from app.nodes.generate_report import generate_report_node
 
 

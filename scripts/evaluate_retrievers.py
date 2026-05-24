@@ -4,7 +4,9 @@ import argparse
 import csv
 import json
 import unicodedata
+from datetime import datetime
 from statistics import mean
+from time import perf_counter
 from typing import Any
 
 from app.states import PaperState
@@ -102,7 +104,21 @@ def parse_args() -> argparse.Namespace:
         "--output-csv",
         type=str,
         default="",
-        help="Optional path to save evaluation summary as CSV.",
+        help="Optional extra path to save evaluation summary as CSV.",
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="outputs/eval",
+        help="Directory used for timestamped CSV and Markdown evaluation results.",
+    )
+
+    parser.add_argument(
+        "--save-results",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Save timestamped CSV and Markdown results to --output-dir. Enabled by default.",
     )
 
     parser.add_argument(
@@ -190,6 +206,17 @@ def hit_at_rank(first_hit_rank: int | None, k: int) -> float:
     return 1.0 if first_hit_rank <= k else 0.0
 
 
+def percentile(values: list[float], percentile_value: float) -> float:
+    if not values:
+        return 0.0
+
+    sorted_values = sorted(values)
+    index = round((percentile_value / 100.0) * (len(sorted_values) - 1))
+    index = max(0, min(index, len(sorted_values) - 1))
+
+    return sorted_values[index]
+
+
 def evaluate_method(
     method_name: str,
     retriever,
@@ -204,6 +231,7 @@ def evaluate_method(
     hit_k_scores = []
     mrr_scores = []
     ranks = []
+    latencies_ms = []
 
     first_stage_k = max(top_k, rerank_candidate_k)
 
@@ -211,6 +239,8 @@ def evaluate_method(
         query = eval_item["query"]
         expected_keywords = eval_item["expected_keywords"]
         min_keyword_matches = eval_item.get("min_keyword_matches", 1)
+
+        start_time = perf_counter()
 
         if reranker is None:
             retrieval_results = retriever.search(
@@ -228,6 +258,9 @@ def evaluate_method(
                 results=candidate_results,
                 top_k=top_k,
             )
+
+        latency_ms = (perf_counter() - start_time) * 1000.0
+        latencies_ms.append(latency_ms)
 
         first_hit_rank = find_first_hit_rank(
             retrieval_results=retrieval_results,
@@ -251,16 +284,23 @@ def evaluate_method(
             print(
                 f"[{method_name}] "
                 f"Query {eval_index:02d}: {hit_status} | "
+                f"latency={latency_ms:.2f} ms | "
                 f"query={query}"
             )
 
     return {
         "method": method_name,
-        "hit@1": mean(hit_1_scores),
-        "hit@3": mean(hit_3_scores),
-        f"hit@{top_k}": mean(hit_k_scores),
-        f"mrr@{top_k}": mean(mrr_scores),
+        "num_queries": len(eval_queries),
+        "hit_at_1": mean(hit_1_scores),
+        "hit_at_3": mean(hit_3_scores),
+        "hit_at_k": mean(hit_k_scores),
+        "mrr_at_k": mean(mrr_scores),
         "avg_rank": mean(ranks),
+        "avg_latency_ms": mean(latencies_ms),
+        "min_latency_ms": min(latencies_ms),
+        "max_latency_ms": max(latencies_ms),
+        "p50_latency_ms": percentile(latencies_ms, 50),
+        "p95_latency_ms": percentile(latencies_ms, 95),
     }
 
 '''
@@ -332,29 +372,33 @@ def print_summary_table(results: list[dict[str, Any]], top_k: int) -> None:
 
 
 def print_summary_table(results: list[dict[str, Any]], top_k: int) -> None:
-    hit_k_name = f"hit@{top_k}"
-    mrr_k_name = f"mrr@{top_k}"
+    method_width = max(
+        len("Method"),
+        max(len(result["method"]) for result in results),
+    )
 
     print("\n========== RETRIEVAL EVALUATION ==========\n")
 
     print(
-        f"{'Method':<32} "
+        f"{'Method':<{method_width}} "
         f"{'Hit@1':<10} "
         f"{'Hit@3':<10} "
         f"{f'Hit@{top_k}':<10} "
         f"{f'MRR@{top_k}':<10} "
-        f"{'Avg Rank':<10}"
+        f"{'Avg Rank':<10} "
+        f"{'Avg Lat(ms)':<12}"
     )
-    print("-" * 86)
+    print("-" * (method_width + 69))
 
     for result in results:
         print(
-            f"{result['method']:<32} "
-            f"{result['hit@1']:<10.3f} "
-            f"{result['hit@3']:<10.3f} "
-            f"{result[hit_k_name]:<10.3f} "
-            f"{result[mrr_k_name]:<10.3f} "
-            f"{result['avg_rank']:<10.3f}"
+            f"{result['method']:<{method_width}} "
+            f"{result['hit_at_1']:<10.3f} "
+            f"{result['hit_at_3']:<10.3f} "
+            f"{result['hit_at_k']:<10.3f} "
+            f"{result['mrr_at_k']:<10.3f} "
+            f"{result['avg_rank']:<10.3f} "
+            f"{result['avg_latency_ms']:<12.2f}"
         )
 
 
@@ -378,7 +422,79 @@ def save_summary_csv(
         writer.writeheader()
         writer.writerows(results)
 
-    print(f"\nSaved evaluation summary to: {output_path}")
+    print(f"\nSaved evaluation summary CSV to: {output_path}")
+
+
+def save_summary_markdown(
+    results: list[dict[str, Any]],
+    output_markdown: str,
+    run_time: str,
+    eval_json_path: Path,
+    top_k: int,
+) -> None:
+    if not output_markdown:
+        return
+
+    output_path = Path(output_markdown)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    method_names = [result["method"] for result in results]
+
+    lines = [
+        "# Retriever Evaluation Results",
+        "",
+        f"- Run Time: {run_time}",
+        f"- Eval Queries: `{eval_json_path}`",
+        f"- Top-K: {top_k}",
+        f"- Methods: {', '.join(method_names)}",
+        "",
+        "## Method Summary",
+        "",
+        "| Method | Num Queries | Hit@1 | Hit@3 | Hit@K | MRR@K | Avg Rank | Avg Latency (ms) | Min Latency (ms) | Max Latency (ms) | P50 Latency (ms) | P95 Latency (ms) |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+
+    for result in results:
+        lines.append(
+            "| "
+            f"{result['method']} | "
+            f"{result['num_queries']} | "
+            f"{result['hit_at_1']:.3f} | "
+            f"{result['hit_at_3']:.3f} | "
+            f"{result['hit_at_k']:.3f} | "
+            f"{result['mrr_at_k']:.3f} | "
+            f"{result['avg_rank']:.3f} | "
+            f"{result['avg_latency_ms']:.2f} | "
+            f"{result['min_latency_ms']:.2f} | "
+            f"{result['max_latency_ms']:.2f} | "
+            f"{result['p50_latency_ms']:.2f} | "
+            f"{result['p95_latency_ms']:.2f} |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Notes",
+            "",
+            "- Latency does not include retriever initialization, embedding model loading, or FAISS index loading/building time.",
+            "- Latency includes each method's per-query retrieval cost, including query expansion, multi-query retrieval, and reranking when enabled.",
+            "- Current relevance judgment is keyword-based weak evaluation. It checks expected keyword matches in retrieved chunks, not full semantic sufficiency.",
+        ]
+    )
+
+    output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"Saved evaluation summary Markdown to: {output_path}")
+
+
+def build_timestamped_output_paths(
+    output_dir: str,
+    timestamp: str,
+) -> tuple[str, str]:
+    output_path = Path(output_dir)
+    csv_path = output_path / f"retriever_eval_{timestamp}.csv"
+    markdown_path = output_path / f"retriever_eval_{timestamp}.md"
+
+    return str(csv_path), str(markdown_path)
 
 
 def main() -> None:
@@ -412,6 +528,8 @@ def main() -> None:
     print(f"Query Expansion Max Queries: {args.query_expansion_max_queries}")
     print(f"Multi-query Per-query K: {args.multi_query_per_query_k}")
     print(f"Multi-query RRF K: {args.multi_query_rrf_k}")
+    print(f"Save Results: {args.save_results}")
+    print(f"Output Dir: {args.output_dir}")
     print(
         "\nNote: This is keyword-based weak evaluation. "
         "It checks whether retrieved chunks contain expected keywords, "
@@ -518,6 +636,26 @@ def main() -> None:
         results=results,
         output_csv=args.output_csv,
     )
+
+    if args.save_results:
+        run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_csv, output_markdown = build_timestamped_output_paths(
+            output_dir=args.output_dir,
+            timestamp=run_timestamp,
+        )
+
+        save_summary_csv(
+            results=results,
+            output_csv=output_csv,
+        )
+
+        save_summary_markdown(
+            results=results,
+            output_markdown=output_markdown,
+            run_time=run_timestamp,
+            eval_json_path=eval_json_path,
+            top_k=args.top_k,
+        )
 
 
 if __name__ == "__main__":

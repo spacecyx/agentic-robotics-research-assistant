@@ -1,528 +1,212 @@
 # Agentic Robotics Research Assistant
 
-An agentic research assistant for robotics, SLAM, 3D perception, and AI-related papers.
+面向机器人 / SLAM / 3D 感知论文阅读的 **LangGraph-based RAG workflow**。
 
-This project aims to build a LangGraph-based workflow that can read research papers, summarize key ideas, analyze their technical value, and generate structured Markdown reports.
+本项目将本地 research paper PDF 转换为结构化 Markdown 分析报告，重点关注：
 
-## Progress
+- 多阶段论文理解 workflow
+- evidence-aware report generation
+- modular retriever comparison
+- evaluation-driven RAG improvement
 
-### Day 1
+当前项目不是 production-level autonomous agent system，也不声称具备完整 autonomous planning、多智能体协作、长期记忆或生产级部署能力。它更准确的定位是：一个围绕论文阅读场景构建的可解释、可评估、可扩展的 RAG workflow。
 
-Implemented a minimal LangGraph workflow using manually provided paper information.
+## Project Overview
 
-Main features:
+`Agentic Robotics Research Assistant` 用 LangGraph 编排论文处理流程，从 PDF 解析、文本切分、检索、重排、上下文构建，到 LLM 生成论文摘要和技术评价，最终保存为 Markdown 报告。
 
-- Set up the basic project structure
-- Connected the LLM client
-- Built a minimal LangGraph workflow
-- Implemented paper summarization, critique, and report generation nodes
-- Generated a Markdown report from mock paper input
+目标用户包括：
 
-Workflow:
+- 机器人 / SLAM / 3D 感知方向工程师
+- 正在学习深度学习、大模型应用、Agent 工程的开发者
+- 希望用项目展示 RAG 工程能力和论文分析能力的求职者
 
-```text
-paper title + abstract
-        ↓
-summarize_paper_node
-        ↓
-critique_paper_node
-        ↓
-generate_report_node
-        ↓
-Markdown report
-```
+典型输出报告包含：
 
-### Day 2
+- paper summary
+- technical critique
+- retrieved evidence
+- retriever configuration
+- query expansion / rerank metadata
 
-Extended the project from mock paper input to real PDF paper processing.
+## Why This Project
 
-Main features:
+普通 PDF QA demo 往往只解决“问一句、答一句”的问题，难以体现检索证据、检索质量和系统工程取舍。
 
-- Added PDF loading support with `pypdf`
-- Extracted text from local research paper PDFs
-- Added lightweight paper text cleaning
-- Added heuristic paper title extraction
-- Added `load_pdf_node` to the LangGraph workflow
-- Updated `PaperState` to support PDF-based paper analysis
-- Organized the code into `nodes`, `tools`, `states`, and `graph`
-- Generated structured Markdown reports from real PDF papers
+本项目关注的是论文阅读场景下更完整的 RAG workflow：
 
-Current workflow:
+- 用 LangGraph 将论文分析拆成多个明确节点。
+- 用 retrieved evidence 解释 LLM 报告依据。
+- 对比 TF-IDF、Embedding、Hybrid、Query Expansion、Rerank 等检索策略。
+- 用 Hit@K、MRR@K、Avg Rank 和 Latency 做 retrieval evaluation。
 
-```text
-local PDF file
-        ↓
-load_pdf_node
-        ↓
-PDF text extraction
-        ↓
-paper title extraction
-        ↓
-paper text cleaning
-        ↓
-summarize_paper_node
-        ↓
-critique_paper_node
-        ↓
-generate_report_node
-        ↓
-Markdown report
-```
+这使项目更适合作为大模型应用工程 / AI Agent 应用开发方向的求职展示项目。
 
-### Day 3
+## Key Features
 
-Extended the project from full-paper summarization to basic retrieval preparation for RAG.
+- **PDF parsing and cleaning**：读取本地论文 PDF，提取标题并清洗文本。
+- **LangGraph workflow**：用节点化流程组织论文分析任务。
+- **Modular retrievers**：支持 TF-IDF、Embedding、Hybrid、FAISS。
+- **Query expansion and multi-query RRF**：支持启发式 query expansion、多 query 检索和 RRF-style 融合。
+- **Reranking**：支持 keyword reranker 和 score fusion reranker。
+- **Context construction**：控制上下文长度，并保留 chunk-level evidence metadata。
+- **Evidence-aware Markdown report**：报告中展示 chunk id、score、rank、source、char range。
+- **Retriever evaluation**：支持 Hit@1、Hit@3、Hit@K、MRR@K、Avg Rank、Latency，并导出 CSV / Markdown。
 
-Main features:
+## System Architecture
 
-- Added text chunking support for cleaned paper text
-- Implemented overlapping text chunks with chunk metadata
-- Added a simple TF-IDF based retriever
-- Supported top-k relevant chunk retrieval for user queries
-- Added test scripts for text splitting and retrieval
-- Connected PDF loading, text cleaning, chunking, and simple retrieval into a local test pipeline
-- Prepared the project foundation for future embedding-based retrieval and RAG question answering
-
-Current retrieval preparation workflow:
-
-```text
-local PDF file
-        ↓
-load_pdf_text
-        ↓
-clean_paper_text
-        ↓
-split_text_into_chunks
-        ↓
-TF-IDF vectorization
-        ↓
-retrieve_top_k
-        ↓
-relevant paper chunks
-```
-
-### Day 4/5
-
-Polished the LangGraph-based RAG pipeline into a more reproducible and debuggable paper analysis system.
-
-Main features:
-
-- Cleaned the main CLI entry point.
-- Added `--top-k` argument for controlling the number of retrieved chunks.
-- Added PDF path validation.
-- Standardized `PaperState` fields across the pipeline.
-- Added retrieval evidence tracking in the final Markdown report.
-- Added report writer utilities for saving Markdown reports.
-- Added an end-to-end pipeline smoke test.
-
-Current Workflow:
-
-```text
-PDF path + query + top_k
-        ↓
-load_pdf_node
-        ↓
-split_text_node
-        ↓
-retrieve_context_node
-        ↓
-summarize_paper_node
-        ↓
-critique_paper_node
-        ↓
-generate_report_node
-        ↓
-Markdown report saved to outputs/
-```
-
-### Day 6
-
-Upgraded the retrieval layer from a single TF-IDF retriever to a modular retriever architecture.
-
-Main features:
-
-- Added a pluggable retriever interface.
-- Refactored the original TF-IDF retriever into `TfidfRetriever`.
-- Added `EmbeddingRetriever` based on `sentence-transformers`.
-- Added `RetrieverFactory` for switching retrieval strategies.
-- Added CLI options:
-  - `--retriever-type`
-  - `--embedding-model`
-  - `--top-k`
-- Added a retriever comparison script.
-
- Retriever Types
-```text
-tfidf       keyword-based retrieval using TF-IDF cosine similarity
-embedding  semantic retrieval using sentence-transformer embeddings
-```
-
-Current Workflow
-```text
-PDF + query + retriever config
-        ↓
-PDF parsing
-        ↓
-text splitting
-        ↓
-retriever factory
-        ↓
-TF-IDF retriever or embedding retriever
-        ↓
-retrieved context
-        ↓
-LangGraph analysis nodes
-        ↓
-Markdown report
-```
-
-
-### Day 7
-
-Implemented Hybrid Retrieval and a lightweight retrieval evaluation pipeline.
-
-Main features:
-
-- Extended `RetrievalResult` with `source` and `metadata` fields.
-- Added `HybridRetriever` to combine TF-IDF keyword retrieval and Embedding semantic retrieval.
-- Updated Retriever Factory to support `tfidf`, `embedding`, and `hybrid` retrievers.
-- Added a small retrieval evaluation dataset in `data/eval_queries.json`.
-- Implemented retrieval metrics including Hit@K, MRR@K, and Average Rank.
-- Updated retriever comparison script to compare TF-IDF, Embedding, and Hybrid retrieval results.
-
-Retrieval workflow:
+主 LangGraph workflow：
 
 ```text
 PDF
-  ↓
-Text chunks
-  ↓
-TF-IDF Retriever + Embedding Retriever
-  ↓
-Hybrid score fusion
-  ↓
-Top-K retrieved chunks
-  ↓
-Hit@K / MRR@K evaluation
+  -> load_pdf_node
+  -> split_text_node
+  -> retrieve_context_node
+  -> summarize_paper_node
+  -> critique_paper_node
+  -> generate_report_node
+  -> Markdown report
 ```
 
-### Closing Stage (basic)
-
-Finished the core closing tasks for the paper RAG system.
-
-This stage upgraded the project from a modular retrieval system into a more complete retrieval-to-generation pipeline with reranking, context construction, citation-aware answering, and extended retrieval evaluation.
-
-Main features:
-
-- Added a modular reranker layer.
-- Implemented `KeywordReranker` as a lightweight reranking baseline.
-- Implemented `ScoreFusionReranker` to combine original retriever scores with keyword rerank scores.
-- Added `RerankerFactory` for switching reranking strategies.
-- Added `ContextBuilder` to construct LLM-ready context from retrieved and reranked chunks.
-- Added structured evidence metadata, including `chunk_id`, score, rank, source, and character range.
-- Added `AnswerGenerator` for grounded question answering based on retrieved context.
-- Upgraded the retrieval evaluation script to compare original retrievers and reranked retrievers.
-- Added evaluation support for `tfidf+keyword_rerank` and `hybrid+score_fusion_rerank`.
-
-Current Workflow：
+模块视角：
 
 ```text
-PDF + query
-        ↓
-load_pdf_node
-        ↓
-split_text_node
-        ↓
-Retriever Factory
-        ↓
-TF-IDF / Embedding / Hybrid Retriever
-        ↓
-Reranker Factory
-        ↓
-Keyword / Score Fusion Reranker
-        ↓
-ContextBuilder
-        ↓
-retrieved context + structured evidence
-        ↓
-summarize_paper_node / critique_paper_node / AnswerGenerator
-        ↓
-Markdown report or citation-aware answer
+app/
+  main.py        CLI entry point
+  graph.py       LangGraph workflow definition
+  states.py      shared workflow state
+  nodes/         workflow nodes
+  tools/         PDF, retrieval, rerank, context, report utilities
 
+scripts/
+  evaluation and smoke-test scripts
+
+outputs/
+  generated reports and evaluation results
 ```
 
-Retrieval evaluation workflow:
+## RAG Pipeline
+
+### TF-IDF Retriever
+
+关键词匹配 baseline，适合术语明确的问题，速度快，便于和其他检索策略对比。
+
+### Embedding Retriever
+
+基于 `sentence-transformers` 的语义检索，适合 query 和论文原文表达不完全一致的情况。
+
+### Hybrid Retriever
+
+融合 TF-IDF 和 embedding 分数，兼顾关键词精确匹配和语义召回。
+
+### FAISS Retriever
+
+使用本地 FAISS 向量索引，避免每次运行重复构建文档 embedding。当前用于 paper-level local retrieval，不是大规模向量检索服务。
+
+### Query Expansion + Multi-query RRF
+
+对复杂问题生成多个 query variants，分别检索后进行去重和 RRF-style 融合。该方法可能提升召回，但也会增加 per-query latency。
+
+### Rerank
+
+对 first-stage retrieved candidates 二次排序。当前实现包括 keyword rerank 和 score fusion rerank。
+
+## Evaluation
+
+评估脚本：[scripts/evaluate_retrievers.py](scripts/evaluate_retrievers.py)
+
+当前支持指标：
+
+- Hit@1
+- Hit@3
+- Hit@K
+- MRR@K
+- Avg Rank
+- Avg Latency(ms)
+
+评估结果默认保存到：
 
 ```text
-evaluation queries
-        ↓
-TF-IDF / Embedding / Hybrid retrieval
-        ↓
-optional reranking
-        ↓
-keyword-based weak matching
-        ↓
-Hit@1 / Hit@3 / Hit@K / MRR@K / Average Rank
-        ↓
-retriever comparison table
+outputs/eval/
 ```
 
-Supported evaluated methods:
+评估配置：
+
+- PDF: `data/resnet.pdf`
+- Eval queries: `data/eval_queries.json`
+- Top-K: `5`
+- Number of queries: `12`
+
+示例评估结果：
+
+| Method | Hit@1 | Hit@3 | Hit@5 | MRR@5 | Avg Rank | Avg Latency(ms) |
+|---|---:|---:|---:|---:|---:|---:|
+| tfidf | 0.333 | 0.583 | 0.667 | 0.461 | 3.333 | 1.51 |
+| embedding | 0.417 | 0.583 | 0.667 | 0.507 | 3.167 | 7.71 |
+| hybrid | 0.417 | 0.500 | 0.667 | 0.496 | 3.333 | 7.71 |
+| tfidf+keyword_rerank | 0.417 | 0.667 | 0.750 | 0.544 | 2.917 | 0.96 |
+| hybrid+score_fusion_rerank | 0.333 | 0.500 | 0.750 | 0.471 | 3.333 | 9.37 |
+| hybrid+query_expansion | 0.333 | 0.583 | 0.667 | 0.447 | 3.417 | 35.44 |
+| hybrid+query_expansion+score_fusion_rerank | 0.417 | 0.583 | 0.667 | 0.521 | 3.083 | 34.13 |
+
+说明：
+
+- 当前 relevance 判断仍是 keyword-based weak evaluation。
+- Latency 不包含 retriever 初始化、embedding 模型加载、FAISS index loading/building。
+- Latency 包含每个 method 内部的 query expansion、multi-query retrieval、rerank 成本。
+- 后续计划加入 `relevant_chunk_ids`、page citation 和 faithfulness evaluation。
+
+## Quick Start
+
+### 1. Create Environment
+
+推荐使用 conda：
+
+```bash
+conda env create -f environment.yml
+conda activate agentic-robotics
+```
+
+也可以使用 requirements：
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Configure `.env`
+
+```bash
+cp .env.example .env
+```
+
+`.env` 示例：
 
 ```text
-tfidf
-embedding
-hybrid
-tfidf+keyword_rerank
-hybrid+score_fusion_rerank
+OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_MODEL=gpt-4o-mini
 ```
 
-### Plus Work
+### 3. Run Main Workflow
 
-Added local FAISS vector indexing and heuristic query expansion to improve retrieval efficiency and recall robustness.
-
-Main features:
-
-- Added `FaissVectorStore` for local vector index build, save, load, and search
-- Added `FaissRetriever` as a persistent embedding retrieval backend
-- Added FAISS index files:
-  - `faiss.index`
-  - `chunks.json`
-  - `embeddings.npy`
-  - `index_meta.json`
-- Added embedding cache to avoid recomputing document embeddings on every run
-- Added chunk fingerprint checking to avoid loading mismatched indexes
-- Added `HeuristicQueryExpander` for rule-based query expansion
-- Added `MultiQueryRetriever` for multi-query retrieval, result merge, and chunk deduplication
-- Added Reciprocal Rank Fusion style scoring for merging multi-query retrieval results
-- Updated the main RAG workflow to optionally use query expansion before reranking
-- Extended retrieval evaluation with:
-  - `hybrid+query_expansion`
-  - `hybrid+query_expansion+score_fusion_rerank`
-
-FAISS indexing workflow:
-
-```text
-PDF
-        ↓
-load_pdf_node
-        ↓
-split_text_node
-        ↓
-SentenceTransformer embeddings
-        ↓
-FAISS IndexFlatIP
-        ↓
-save faiss.index + chunks.json + embeddings.npy + index_meta.json
-```
-
-Query expansion workflow:
-
-```text
-original query
-        ↓
-HeuristicQueryExpander
-        ↓
-multiple query variants
-        ↓
-base retriever.search() for each query
-        ↓
-merge results
-        ↓
-deduplicate by chunk_id
-        ↓
-reranker
-        ↓
-ContextBuilder
-        ↓
-retrieved context + structured evidence
-```
-
-Updated retrieval evaluation methods:
-
-```text
-tfidf
-embedding
-hybrid
-tfidf+keyword_rerank
-hybrid+score_fusion_rerank
-hybrid+query_expansion
-hybrid+query_expansion+score_fusion_rerank
-```
-
-Current full workflow:
-
-```text
-PDF + query
-        ↓
-load_pdf_node
-        ↓
-split_text_node
-        ↓
-Retriever Factory
-        ↓
-TF-IDF / Embedding / Hybrid / FAISS Retriever
-        ↓
-optional Query Expansion + MultiQueryRetriever
-        ↓
-optional Reranker
-        ↓
-ContextBuilder
-        ↓
-retrieved context + structured evidence
-        ↓
-LLM-based summary / critique / answer generation
-        ↓
-Markdown report
-```
-
-
-## Test
-
-Test the PDF loader:
-
-```bash
-python -m scripts.test_pdf_loader
-```
-
-Test text chunking
-```bash
-python -m scripts.test_text_splitter --pdf ./data/transformer.pdf
-```
-
-Test simple retrieval:
-```bash
-python -m scripts.test_retriever --pdf ./data/transformer.pdf --query "multi-head attention"
-```
-
-Test simple RAG based paper report: 
-```bash
-python -m scripts.test_pipeline_day5 \
-  --pdf data/resnet.pdf \
-  --query "What is the main contribution and limitation of this paper?" \
-  --top-k 3
-```
-
-Test upgraded RAG based paper report: (embedding as an example)
-```bash
-python -m scripts.test_pipeline_day6 \
-  --pdf data/resnet.pdf \
-  --query "What is the main contribution of this paper?" \
-  --top-k 3 \
-  --retriever-type embedding
-  # --retriever-type tfidf
-```
-
-Compare retrievers:
-
-```bash
-python -m scripts.compare_retrievers \
-  --pdf data/resnet.pdf \
-  --query "What is the degradation problem in ResNet?" \
-  --top-k 5 \
-  --retriever-type hybrid
-```
-
-Evaluate retrieval performance:
-
-```bash
-python -m scripts.evaluate_retrievers \
-  --pdf data/resnet.pdf \
-  --eval-json data/eval_queries.json \
-  --top-k 5 \
-  --embedding-model sentence-transformers/all-MiniLM-L6-v2 \
-  --alpha 0.6 \
-  --candidate-k 20 \
-  --rerank-candidate-k 15 \
-  --retriever-weight 0.7 \
-  --query-expansion-max-queries 4 \
-  --multi-query-per-query-k 10 \
-  --multi-query-rrf-k 60
-```
-
-Save retrieval evaluation results:
-
-```bash
-python -m scripts.evaluate_retrievers \
-  --pdf data/resnet.pdf \
-  --eval-json data/eval_queries.json \
-  --top-k 5 \
-  --output-csv outputs/retriever_eval_results.csv
-```
-
-Build a FAISS index:
-
-```bash
-python -m scripts.build_faiss_index \
-  --pdf data/resnet.pdf \
-  --index-dir data/index/resnet \
-  --embedding-model sentence-transformers/all-MiniLM-L6-v2
-```
-
-Test FAISS retrieval:
-
-```bash
-python -m scripts.test_faiss_retriever \
-  --pdf data/resnet.pdf \
-  --query "What is residual learning and why does ResNet use shortcut connections?" \
-  --top-k 5 \
-  --index-dir data/index/resnet
-```
-
-Test query expansion:
-
-```bash
-python -m scripts.test_query_expansion \
-  --pdf data/resnet.pdf \
-  --query "What are the main method and limitations of ResNet?" \
-  --retriever-type hybrid \
-  --top-k 5 \
-  --per-query-k 8 \
-  --max-queries 4
-```
-
-## Run
-
-Run the current paper RAG pipeline:
+Hybrid retrieval 示例：
 
 ```bash
 python -m app.main \
   --pdf data/resnet.pdf \
   --query "What are the main problem, method, contribution, experimental results, and limitations of this paper?" \
-  --top-k 10
-```
-
-Run with TF-IDF retrieval:
-
-```bash
-python -m app.main \
-  --pdf data/resnet.pdf \
-  --query "What is the degradation problem in deep neural networks?" \
-  --top-k 5 \
-  --retriever-type tfidf
-```
-
-Run with Embedding retrieval:
-
-```bash
-python -m app.main \
-  --pdf data/resnet.pdf \
-  --query "What is the degradation problem in deep neural networks?" \
-  --top-k 5 \
-  --retriever-type embedding
-```
-
-Run with Hybrid retrieval:
-
-```bash
-python -m app.main \
-  --pdf data/resnet.pdf \
-  --query "What is the degradation problem in deep neural networks?" \
   --top-k 5 \
   --retriever-type hybrid
 ```
 
-Run with FAISS retrieval:
+FAISS retrieval 示例：
+
+```bash
+python -m app.tools.build_faiss_index \
+  --pdf data/resnet.pdf \
+  --index-dir data/index/resnet \
+  --embedding-model sentence-transformers/all-MiniLM-L6-v2
+```
 
 ```bash
 python -m app.main \
@@ -533,7 +217,7 @@ python -m app.main \
   --faiss-index-dir data/index/resnet
 ```
 
-Run with query expansion:
+Query expansion 示例：
 
 ```bash
 python -m app.main \
@@ -546,32 +230,90 @@ python -m app.main \
   --multi-query-per-query-k 8
 ```
 
-Run with FAISS retrieval and query expansion:
+### 4. Run Retriever Evaluation
 
 ```bash
-python -m app.main \
+python -m scripts.evaluate_retrievers \
   --pdf data/resnet.pdf \
-  --query "What are the main method and limitations of ResNet?" \
-  --top-k 3 \
-  --retriever-type faiss \
-  --faiss-index-dir data/index/resnet \
-  --use-query-expansion \
-  --query-expansion-max-queries 4 \
-  --multi-query-per-query-k 8
+  --eval-json data/eval_queries.json \
+  --top-k 5 \
+  --output-dir outputs/eval
 ```
 
+评估结果会保存为：
 
-## Output
+```text
+outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.csv
+outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.md
+```
 
-Generated reports are saved under:
+## Example Output
+
+主流程生成的报告保存在：
 
 ```text
 outputs/
 ```
 
-## Current limitations
+报告主要包含：
 
-- FAISS currently uses a local CPU index, which is enough for paper-level RAG but not optimized for large-scale production retrieval
-- Query expansion is heuristic-based and may introduce noise for some broad or ambiguous queries
-- The evaluation is still keyword-based weak evaluation, not strict semantic evaluation
-- Cross-Encoder reranking and RAGAS-style answer evaluation are not yet implemented
+- input PDF and query
+- paper title
+- retrieval pipeline config
+- expanded queries
+- retrieved evidence metadata
+- retrieved evidence details
+- context passed to LLM
+- paper summary
+- technical critique
+
+## Project Structure
+
+```text
+app/
+  main.py                  CLI entry point
+  graph.py                 LangGraph workflow
+  states.py                shared workflow state
+  nodes/                   LangGraph nodes
+  nodes/legacy/            archived old nodes
+  tools/
+    retrievers/            TF-IDF, embedding, hybrid, FAISS, multi-query
+    rerankers/             keyword and score-fusion rerankers
+    vector_store/          FAISS vector store
+    context_builder.py     evidence-aware context construction
+    report_writer.py       Markdown report saving
+
+scripts/
+  evaluate_retrievers.py   retrieval evaluation
+  compare_retrievers.py    retriever comparison
+  test_*.py                smoke tests and module checks
+
+data/
+  sample PDFs and evaluation queries
+
+outputs/
+  generated reports and evaluation results
+
+docs/
+  audit and design notes
+```
+
+## Current Limitations
+
+- 当前是 workflow-first，不是完整 autonomous agent。
+- LangGraph 主流程仍是线性图，尚未加入条件分支和自动 query rewrite。
+- chunking 仍是 fixed-size character chunking，不是 section-aware chunking。
+- citation 当前主要是 chunk id / char range，不是 page-level citation。
+- evaluation 仍是 keyword-based weak evaluation。
+- query expansion 当前是 heuristic-based，泛化性有限。
+- 尚未加入 faithfulness evaluation。
+- 尚未提供 Web UI。
+
+## Roadmap
+
+- **Trace logging**：记录 PDF、retriever、top_k、candidate_k、latency、output path。
+- **Minimal pytest**：覆盖 `text_splitter`、`query_expansion`、`reranker`、`context_builder`、`report_writer`。
+- **Section-aware chunking**：按 section / paragraph / page 信息组织 chunk。
+- **Page citation**：将 evidence 从 char range 升级为 page-level citation。
+- **Conditional LangGraph branch**：检索不足时自动 query expansion，context 为空时跳过 LLM 并给出明确错误。
+- **Streamlit demo**：展示 PDF、query、answer/report 和 retrieved evidence。

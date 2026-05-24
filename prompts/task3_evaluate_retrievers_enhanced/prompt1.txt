@@ -1,0 +1,39 @@
+你现在是这个项目的 RAG Evaluation 工程师。
+
+项目背景：
+Agentic Robotics Research Assistant 是一个面向机器人 / SLAM / 3D 感知论文阅读的 LangGraph-based RAG workflow 项目。当前已经有 scripts/evaluate_retrievers.py，用于比较 TF-IDF、Embedding、Hybrid、Query Expansion、Rerank 等检索方法的效果。
+
+本次任务：
+增强 scripts/evaluate_retrievers.py，加入 latency 指标和稳定 CSV / Markdown 结果保存。
+
+但本轮先不要修改代码，请先只读分析。
+
+请你检查 scripts/evaluate_retrievers.py 当前实现，并回答：
+
+1. 当前脚本支持哪些检索方法？
+2. 当前脚本支持哪些指标？
+   - Hit@1
+   - Hit@3
+   - Hit@K
+   - MRR@K
+   - Avg Rank
+   - 其他已有指标
+3. 当前是否已经有计时逻辑？
+4. 当前是否已经有 CSV / Markdown 保存逻辑？
+5. 当前评估流程中，retriever 是每个 query 创建一次，还是每个 method 创建一次？
+6. 如果加入 latency，应该统计哪一段耗时？
+   - 不建议把模型加载 / retriever 初始化时间算进每个 query latency
+   - 建议统计 retriever 初始化完成后，每个 query 的 search / rerank / query expansion 完整检索耗时
+7. 当前代码最适合在哪些位置加入：
+   - per-query latency
+   - method-level average latency
+   - result saving
+8. 给出最小修改方案，不要大重构。
+9. 给出你计划新增或修改的 CLI 参数。
+
+严格要求：
+- 本轮不要修改任何代码。
+- 不要重构整个脚本。
+- 不要改变现有指标定义。
+- 不要改变已有命令行用法。
+- 只输出分析和修改计划。

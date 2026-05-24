@@ -2,7 +2,7 @@
 
 import argparse
 
-from app.tools.pdf_loader import load_pdf_text, clean_paper_text
+from app.tools.pdf_loader_pro import load_pdf_text, clean_paper_text
 from app.tools.text_splitter import split_text_into_chunks, preview_chunks
 
 
@@ -41,7 +41,7 @@ def main() -> None:
 
     chunks = split_text_into_chunks(
         # text=raw_text,
-        text = clean_text,
+        text=clean_text,
         chunk_size=args.chunk_size,
         chunk_overlap=args.chunk_overlap,
     )
