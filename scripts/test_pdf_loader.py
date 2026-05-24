@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from app.tools.pdf_loader import (
+from app.tools.pdf_loader_pro import (
     clean_paper_text,
     extract_paper_title,
     load_pdf_text,
@@ -13,7 +13,7 @@ def test_pdf(pdf_path: str):
 
     fallback_title = Path(pdf_path).stem
     paper_title = extract_paper_title(
-        text=paper_text,
+        raw_text=raw_text,
         fallback_title=fallback_title,
     )
 

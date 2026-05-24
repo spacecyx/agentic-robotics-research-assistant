@@ -1,0 +1,40 @@
+现在开始执行 legacy cleanup 的第一步：引用迁移与命令修正。
+
+背景：
+根据 legacy cleanup 审计结果，当前主 LangGraph 链路已经使用新版节点：
+- app/graph.py 使用 app.nodes.retrieve_context
+- app/graph.py 使用 app.nodes.generate_report
+- app/nodes/load_pdf.py 使用 pdf_loader_pro
+
+但仍有一些旧模块被 scripts 或旧节点引用：
+- app/tools/pdf_loader.py 被 scripts/test_pdf_loader.py、scripts/test_text_splitter.py 引用
+- app/tools/simple_retriever.py 被 scripts/test_retriever.py、旧节点 retrieve_context_oldest.py、states.py 注释引用
+
+本次任务目标：
+只做“引用迁移与文档命令修正”，不要删除任何文件。
+
+请完成：
+1. 将 scripts/test_pdf_loader.py 改为使用新版 pdf_loader_pro 中当前主链路使用的 PDF 读取函数。
+2. 将 scripts/test_text_splitter.py 改为使用新版 pdf_loader_pro。
+3. 将 scripts/test_retriever.py 改为使用新版 retriever 体系，例如 create_retriever("tfidf", ...) 或 TfidfRetriever。
+4. 修正 README 中 FAISS 构建命令不一致的问题：如果 README 中写的是 scripts.build_faiss_index，但实际入口是 app.tools.build_faiss_index，请改成真实可运行命令。
+5. 检查 app/states.py 中关于 simple_retriever 的注释引用，如果只是历史注释，请删除或改成新版 retriever 描述。
+
+严格限制：
+1. 不要删除任何文件。
+2. 不要移动任何文件。
+3. 不要重构主流程。
+4. 不要修改 app/graph.py 的主链路。
+5. 不要修改 app/nodes/retrieve_context.py 的业务逻辑。
+6. 本次只允许修改：
+   - scripts/test_pdf_loader.py
+   - scripts/test_text_splitter.py
+   - scripts/test_retriever.py
+   - README.md
+   - app/states.py
+
+完成后请输出：
+1. 修改了哪些文件。
+2. 每个文件为什么修改。
+3. 建议我运行哪些命令验证。
+4. 哪些 legacy 文件下一步可以考虑归档或删除。

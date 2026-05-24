@@ -3,7 +3,26 @@ import argparse
 
 from app.tools.pdf_loader_pro import load_pdf_text, clean_paper_text
 from app.tools.text_splitter import split_text_into_chunks
-from app.tools.simple_retriever import retrieve_top_k, print_retrieval_results
+from app.tools.retrievers.factory import create_retriever
+
+
+def print_retrieval_results(results, max_chars: int = 700) -> None:
+    if not results:
+        print("No retrieval results.")
+        return
+
+    for rank, result in enumerate(results, start=1):
+        chunk = result.chunk
+
+        print("=" * 100)
+        print(f"Rank: {rank}")
+        print(f"Chunk ID: {chunk.chunk_id}")
+        print(f"Score: {result.score:.4f}")
+        print(f"Source: {result.source}")
+        print(f"Char Range: {chunk.start_char} - {chunk.end_char}")
+        print("-" * 100)
+        print(chunk.text[:max_chars])
+        print()
 
 
 def main() -> None:
@@ -65,9 +84,13 @@ def main() -> None:
     print(f"Query: {args.query}")
     print(f"Top K: {args.top_k}")
 
-    results = retrieve_top_k(
-        query=args.query,
+    retriever = create_retriever(
+        retriever_type="tfidf",
         chunks=chunks,
+    )
+
+    results = retriever.search(
+        query=args.query,
         top_k=args.top_k,
     )
 

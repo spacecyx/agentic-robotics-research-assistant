@@ -1,0 +1,124 @@
+现在开始任务 4：README 求职展示化改造。
+
+项目背景：
+Agentic Robotics Research Assistant 是一个面向机器人 / SLAM / 3D 感知论文阅读的 LangGraph-based RAG workflow 项目。当前已经实现：
+- PDF parsing
+- text cleaning
+- text chunking
+- LangGraph workflow
+- TF-IDF / Embedding / Hybrid / FAISS retrieval
+- Query Expansion
+- Multi-query RRF
+- Rerank
+- Context construction
+- LLM summary and critique
+- Evidence-aware Markdown report generation
+- Retriever evaluation with Hit@K、MRR@K、Avg Rank、Latency
+- Evaluation results export to CSV / Markdown
+
+本次任务：
+请重写 README.md，使其适合 GitHub 展示和实习求职，而不是学习日志。
+
+要求：
+1. 先阅读当前 README.md、docs/project_audit.md、scripts/evaluate_retrievers.py，以及 outputs/eval 下最新的评估结果文件。
+2. 本轮先不要修改代码。
+3. 请先输出 README 改造大纲，等我确认后再写入 README.md。
+4. README 要突出项目价值，但不能过度包装。
+5. 项目定位应写成：
+   LangGraph-based RAG workflow for robotics / SLAM / 3D perception paper reading
+   不要写成 production-level autonomous agent system。
+
+README 建议结构：
+
+# Agentic Robotics Research Assistant
+
+## 1. Project Overview
+说明这是一个面向机器人 / SLAM / 3D 感知论文阅读的 Agentic RAG workflow。
+
+## 2. Why This Project
+说明普通 PDF QA demo 的不足，以及本项目关注：
+- 多阶段论文分析 workflow
+- evidence-aware report generation
+- retriever comparison
+- evaluation-driven RAG improvement
+
+## 3. Key Features
+包括：
+- PDF parsing and cleaning
+- LangGraph workflow
+- Modular retrievers
+- Query expansion and multi-query RRF
+- Reranking
+- Evidence-aware report
+- Retriever evaluation
+
+## 4. System Architecture
+用文本图展示：
+
+PDF
+ -> load_pdf
+ -> split_text
+ -> retrieve_context
+ -> summarize_paper
+ -> critique_paper
+ -> generate_report
+ -> Markdown report
+
+## 5. RAG Pipeline
+说明 TF-IDF、Embedding、Hybrid、FAISS、Query Expansion、Rerank 的作用。
+
+## 6. Evaluation
+说明当前支持：
+- Hit@1
+- Hit@3
+- Hit@K
+- MRR@K
+- Avg Rank
+- Avg Latency(ms)
+
+并引用 outputs/eval 下最新评估结果的摘要表格。
+
+需要注明：
+- 当前 evaluation 仍是 keyword-based weak evaluation
+- 后续会加入 relevant_chunk_ids、page citation、faithfulness evaluation
+
+## 7. Quick Start
+包含：
+- 环境安装
+- 配置 .env
+- 运行主流程命令
+- 运行 retriever evaluation 命令
+
+## 8. Example Output
+说明输出 Markdown report 路径和包含内容：
+- paper summary
+- critique
+- retrieved evidence
+- retriever config
+
+## 9. Project Structure
+简要说明 app、nodes、tools、retrievers、scripts、docs、outputs。
+
+## 10. Current Limitations
+诚实说明：
+- 当前是 workflow-first，不是完整 autonomous agent
+- chunking 还不是 section-aware
+- citation 目前主要是 chunk / char range，不是 page-level citation
+- evaluation 仍偏弱，需要扩展
+
+## 11. Roadmap
+包括：
+- trace logging
+- minimal pytest
+- section-aware chunking
+- page citation
+- conditional LangGraph branch
+- Streamlit demo
+
+输出要求：
+- 中文 README。
+- 语气专业，适合求职展示。
+- 不要写得像课程笔记。
+- 不要夸大成生产级系统。
+- 保留必要命令行示例。
+- 先只给大纲，不要直接修改文件。

@@ -2,7 +2,7 @@ from typing import Any, TypedDict
 
 # Day 4 import
 # from app.tools.text_splitter import TextChunk
-# from app.tools.simple_retriever import RetrievalResult
+# from app.tools.retrievers.schemas import RetrievalResult
 # 注释原因：先用 Any, 即不导入 Chunk、RetrievalResult 等强类型
 #          现在项目还在快速迭代阶段，过早强类型可能引入循环导入问题
 
