@@ -1,0 +1,66 @@
+你现在是这个项目的 AI Agent observability / tracing 工程师。
+
+项目背景：
+Agentic Robotics Research Assistant 是一个面向机器人 / SLAM / 3D 感知论文阅读的 LangGraph-based RAG workflow。当前主流程大致为：
+
+load_pdf
+  -> split_text
+  -> retrieve_context
+  -> summarize_paper
+  -> critique_paper
+  -> generate_report
+
+当前项目已经支持：
+- PDF parsing
+- text chunking
+- TF-IDF / Embedding / Hybrid / FAISS retrieval
+- Query Expansion
+- Rerank
+- Context construction
+- LLM summary / critique
+- Evidence-aware Markdown report
+- Retriever evaluation with Hit@K, MRR@K, Avg Rank, Latency
+
+本次任务：
+增加轻量 trace logging，用于记录每次主流程运行的关键中间信息和节点执行情况。
+
+但本轮先不要修改代码，请只读分析。
+
+请检查以下文件：
+- app/main.py
+- app/graph.py
+- app/states.py
+- app/nodes/load_pdf.py
+- app/nodes/split_text.py
+- app/nodes/retrieve_context.py
+- app/nodes/summarize_paper.py
+- app/nodes/critique_paper.py
+- app/nodes/generate_report.py
+- app/tools/report_writer.py
+- README.md
+
+请回答：
+
+1. 当前主流程中每个节点返回哪些 State 字段？
+2. 哪些字段适合记录到 trace？
+3. 哪些字段不适合完整记录到 trace？
+   - 例如过长的 raw_text、paper_text、retrieved_context、final_report 是否应该只记录长度或 preview。
+4. 最小侵入式 trace 方案应该放在哪里实现？
+   - 是否需要新增 app/tools/trace_writer.py？
+   - 是否需要在 PaperState 中增加 trace_events / trace_path 字段？
+   - 是否需要在 generate_report_node 末尾统一写 trace 文件？
+5. 是否需要记录每个节点耗时？
+   - 如果需要，最小实现方式是什么？
+   - 如果代价较大，可以先只记录关键节点的 summary，不做复杂 decorator。
+6. 建议 trace JSON 的结构。
+7. 建议新增哪些 CLI 参数。
+8. 给出最小修改方案，不要大重构。
+
+严格要求：
+- 本轮不要修改任何代码。
+- 不要引入 LangSmith、OpenTelemetry 或外部 tracing 服务。
+- 不要引入新依赖。
+- 不要改变主 workflow 逻辑。
+- 不要把完整论文全文写入 trace。
+- 不要把 API key 或 .env 信息写入 trace。
+- 只输出分析和修改计划。

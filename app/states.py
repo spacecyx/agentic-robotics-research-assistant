@@ -49,7 +49,7 @@ class PaperState(TypedDict, total=False):
     expanded_queries: list[str]
 
     # Reranking / Context building 
-    reranker_type: str              # keyword / score_fusion / none
+    reranker_type: str              # keyword / score_fusion / section_prior / none
     reranker_top_k: int             # 重排后保留多少 chunk
     retriever_candidate_k: int      # 第一阶段召回多少候选 chunk
     retriever_weight: float         # ScoreFusionReranker 中原始检索分数的权重
@@ -58,7 +58,14 @@ class PaperState(TypedDict, total=False):
     # LLM outputs/analysis
     paper_summary: str
     paper_critique: str
+    errors: list[dict[str, Any]]
+    llm_invocations: list[dict[str, Any]]
 
     # Final report
     final_report: str
     output_path: str
+
+    # Trace logging
+    trace_dir: str
+    disable_trace: bool
+    trace_path: str

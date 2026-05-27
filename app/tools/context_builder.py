@@ -23,6 +23,9 @@ class Evidence:
     rank: int | None
     start_char: int | None
     end_char: int | None
+    page_start: int | None = None
+    page_end: int | None = None
+    section_title: str | None = None
 
 
 @dataclass
@@ -107,6 +110,9 @@ class ContextBuilder:
             chunk_id = getattr(chunk, "chunk_id", None)
             start_char = getattr(chunk, "start_char", None)
             end_char = getattr(chunk, "end_char", None)
+            page_start = getattr(chunk, "page_start", None)
+            page_end = getattr(chunk, "page_end", None)
+            section_title = getattr(chunk, "section_title", None)
             rank = result.metadata.get("rank")
 
             # 截断 (单块文本长度)
@@ -117,6 +123,8 @@ class ContextBuilder:
             header = (
                 f"[Source {source_id} | "
                 f"chunk_id={chunk_id} | "
+                f"page={self._format_page_range(page_start, page_end)} | "
+                f"section={section_title or 'Unknown'} | "
                 f"score={result.score:.4f} | "
                 f"rank={rank} | "
                 f"source={result.source}]"
@@ -153,6 +161,9 @@ class ContextBuilder:
                     rank=rank,
                     start_char=start_char,
                     end_char=end_char,
+                    page_start=page_start,
+                    page_end=page_end,
+                    section_title=section_title,
                 )
             )
 
@@ -184,10 +195,25 @@ class ContextBuilder:
                 f"score={evidence.score:.4f}, "
                 f"rank={evidence.rank}, "
                 f"source={evidence.source}, "
+                f"page_range=({evidence.page_start}, {evidence.page_end}), "
+                f"section={evidence.section_title or 'Unknown'}, "
                 f"char_range=({evidence.start_char}, {evidence.end_char})"
             )
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _format_page_range(
+        page_start: int | None,
+        page_end: int | None,
+    ) -> str:
+        if page_start is None and page_end is None:
+            return "Unknown"
+
+        if page_start == page_end:
+            return str(page_start)
+
+        return f"{page_start}-{page_end}"
 
     @staticmethod
     def _get_chunk_key(chunk: Any) -> Any:

@@ -1,0 +1,19 @@
+请对本次 Query Intent Understanding + Section Prior Reranker 的修改做自检。
+
+检查重点：
+
+1. 是否没有引入新依赖？
+2. 是否没有调用 LLM 做 intent classification？
+3. classify_query_intent 是否能返回 contribution / method / experiment / limitation / general 等 intent？
+4. get_preferred_sections 是否覆盖主要论文阅读问题？
+5. compute_section_prior_score 在 section_title 为 None 时是否安全返回 0.0？
+6. SectionPriorReranker 是否保留原始 retrieval score？
+7. final_score 是否不会让 section prior 完全盖过原始检索分数？
+8. metadata 是否记录 original_score、query_intent、section_prior_score、rank_before_rerank？
+9. --reranker-type section_prior 是否可用？
+10. evaluate_retrievers.py 是否新增了 tfidf+section_prior_rerank / hybrid+section_prior_rerank？
+11. 是否保持了已有 evaluation 指标定义不变？
+12. 是否没有修改 LangGraph 主流程拓扑？
+13. 如果 chunk 没有 section_title，是否不会报错？
+
+如果发现问题，请列出修复计划，不要扩大修改范围。

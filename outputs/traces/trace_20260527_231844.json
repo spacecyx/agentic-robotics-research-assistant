@@ -1,0 +1,82 @@
+{
+  "run_id": "9692d56e-3ce1-4a1c-84f7-32d15ca1b9f8",
+  "created_at": "2026-05-27T23:18:44",
+  "workflow": "paper_rag_report",
+  "input": {
+    "pdf_path": "data/resnet.pdf",
+    "query": "mock query",
+    "top_k": null
+  },
+  "config": {
+    "retriever_type": null,
+    "embedding_model": null,
+    "faiss_index_dir": null,
+    "rebuild_faiss_index": null,
+    "use_query_expansion": null,
+    "query_expansion_max_queries": null,
+    "multi_query_per_query_k": null,
+    "multi_query_rrf_k": null,
+    "retriever_candidate_k": null,
+    "reranker_type": null,
+    "reranker_top_k": null,
+    "retriever_weight": null,
+    "hybrid_alpha": null
+  },
+  "paper": {
+    "paper_title": "Mock Paper",
+    "raw_text": {
+      "chars": 0,
+      "preview": null
+    },
+    "paper_text": {
+      "chars": 0,
+      "preview": null
+    },
+    "chunks": {
+      "count": 0,
+      "preview_items": []
+    }
+  },
+  "retrieval": {
+    "expanded_queries": null,
+    "retrieval_results": {
+      "count": 0,
+      "preview_items": []
+    },
+    "retrieved_context": {
+      "chars": 12,
+      "preview": "mock context"
+    },
+    "retrieval_evidence": {
+      "chars": 13,
+      "preview": "mock evidence"
+    }
+  },
+  "llm_outputs": {
+    "paper_summary": {
+      "chars": 93,
+      "preview": "[LLM generation failed in summarize_paper_node: timeout. Please check trace log for details.]"
+    },
+    "paper_critique": {
+      "chars": 92,
+      "preview": "[LLM generation failed in critique_paper_node: timeout. Please check trace log for details.]"
+    }
+  },
+  "errors": [
+    {
+      "node_name": "summarize_paper_node",
+      "error_type": "timeout",
+      "error_message": "LLM call timed out",
+      "attempts": 1,
+      "latency_ms": 1.2
+    }
+  ],
+  "outputs": {
+    "report_path": "outputs/resnet_rag_report_20260527_231844.md",
+    "final_report": {
+      "chars": 1380,
+      "preview": "# Paper Analysis Report ## Input - PDF: `data/resnet.pdf` - Query: mock query ## Paper Title Mock Paper ## Retrieval Pipeline - Retriever Type: tfidf - Embedding Model: - Final Top-K: 5 - Retriever Ca..."
+    },
+    "trace_path": "outputs/traces/trace_20260527_231844.json"
+  }
+}

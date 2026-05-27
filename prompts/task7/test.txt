@@ -1,0 +1,6 @@
+"from app.tools.query_understanding import classify_query_intent,
+  get_preferred_sections, compute_section_prior_score; queries=['main contribution novelty','what method is
+  used','experimental comparison baseline','limitations and future work','random summary'];
+  print([classify_query_intent(q) for q in queries]); print(get_preferred_sections('method'));
+  print(compute_section_prior_score(None, ['Method'])); print(compute_section_prior_score('Method',
+  get_preferred_sections('method')))"

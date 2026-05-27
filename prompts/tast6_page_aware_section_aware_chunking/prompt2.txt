@@ -1,0 +1,123 @@
+请按照刚才的分析，实现最小可控的 page-aware / section-aware chunking。
+
+目标：
+在不破坏现有 RAG 流程的前提下，让 TextChunk、Evidence、Report 和 Trace 支持 page_start、page_end、section_title。
+
+一、数据结构要求
+
+请在 TextChunk 中保留已有字段：
+- chunk_id
+- text
+- start_char
+- end_char
+
+新增可选字段：
+- page_start: int | None = None
+- page_end: int | None = None
+- section_title: str | None = None
+
+如果当前 TextChunk 是 dataclass，请直接增加可选字段。
+如果当前是普通类或 TypedDict，请保持项目风格增加字段。
+
+二、page 信息
+
+优先采用最小方案：
+- 当前 raw_text 中如果已经包含类似 [Page 1] 的 marker，则基于这些 marker 建立 char offset 到 page number 的映射。
+- split_text 时，根据 chunk 的 start_char / end_char 推断 page_start / page_end。
+- 如果无法推断，则 page_start / page_end 为 None，不要报错。
+
+注意：
+- 不要破坏 paper_text 的清洗逻辑。
+- 不要为了 page 信息把全文结构大幅重写。
+- 保持现有 chunk start_char / end_char 含义稳定。
+
+三、section 信息
+
+实现一个轻量 section detector：
+- 根据清洗后的论文文本识别常见 section 标题，例如：
+  - Abstract
+  - 1. Introduction
+  - Introduction
+  - Related Work
+  - Method
+  - Methods
+  - Approach
+  - Experiments
+  - Results
+  - Discussion
+  - Conclusion
+  - References
+  - Appendix
+- split_text 时，根据 chunk start_char 所在位置推断 section_title。
+- 如果无法识别，则 section_title 为 None 或 Unknown。
+
+要求：
+- section detector 用启发式规则即可。
+- 不要引入新依赖。
+- 不要调用 LLM 做 section detection。
+
+四、Evidence / Context / Report
+
+请让检索 evidence 中展示 page 和 section 信息。
+
+例如：
+- page_range=(1, 2)
+- section=Introduction
+
+ContextBuilder 生成 source header 时可以变成：
+
+[Source 1 | chunk_id=3 | page=1-2 | section=Introduction | score=0.8123 | rank=1 | source=hybrid]
+
+报告中的 Retrieved Evidence 部分也展示：
+- chunk_id
+- score
+- rank
+- source
+- page_start / page_end
+- section_title
+- char_range
+
+五、Trace
+
+trace_writer 中 retrieval_results preview_items 也加入：
+- page_start
+- page_end
+- section_title
+
+六、Evaluation
+
+evaluate_retrievers.py 不需要改变指标定义。
+如果当前 evaluation 输出 detail，可选加入 page / section 字段。
+不要为了这个任务重构 evaluation。
+
+七、允许修改范围
+
+允许修改：
+- app/tools/text_splitter.py
+- app/tools/context_builder.py
+- app/tools/trace_writer.py
+- app/nodes/split_text.py
+- app/nodes/generate_report.py
+- 相关轻量测试脚本或 README 中必要说明
+
+如确有必要，可修改：
+- app/tools/retrievers/schemas.py
+
+不允许修改：
+- retriever scoring 逻辑
+- embedding 模型逻辑
+- FAISS 底层索引逻辑
+- LLM prompt 逻辑
+- LangGraph 主流程拓扑
+- eval_queries.json
+
+八、完成后输出
+
+请说明：
+1. 修改了哪些文件。
+2. TextChunk 新增了哪些字段。
+3. page_start/page_end 如何推断。
+4. section_title 如何推断。
+5. Evidence / Report / Trace 如何展示新增 metadata。
+6. 哪些情况会返回 None。
+7. 建议我运行哪些验证命令。

@@ -1,0 +1,38 @@
+请将上一阶段实现的 safe_llm_invoke 接入当前 LangGraph workflow 中真正调用 LLM 的核心节点。
+
+目标：
+把直接裸调用 LLM 的代码替换为 safe_llm_invoke，但不要改变节点对外输入输出结构，尽量保持现有 workflow 兼容。
+
+请优先改造以下类型节点：
+1. summarize_paper_node
+2. critique_paper_node
+3. generate_report_node
+或者你在审计中发现的实际 LLM 调用节点。
+
+具体要求：
+
+1. 节点内部不再直接裸调用 llm.invoke / chat_model.invoke / generate。
+2. 统一通过 safe_llm_invoke 调用模型。
+3. 如果调用成功：
+   - 使用 result["content"] 作为原来的模型输出。
+4. 如果调用失败：
+   - 不要 raise 导致整个 LangGraph workflow 中断。
+   - 返回清晰的 fallback 文本，例如：
+     "[LLM generation failed in summarize_paper_node: timeout. Please check trace log for details.]"
+5. 如果当前 State 中已有 errors / trace / logs 字段，则把错误信息追加进去。
+6. 如果 State 中还没有 errors 字段，请以最小侵入方式新增，避免破坏已有状态结构。
+7. 保留已有 chunk evidence、retrieval results、report metadata 等逻辑。
+8. 不要修改检索器、评估脚本、FAISS、RRF、rerank 等模块。
+
+请特别注意：
+- 不要大规模重构节点函数。
+- 不要改变 CLI 参数。
+- 不要改变最终 Markdown 报告路径。
+- 不要吞掉所有异常而不给任何日志。
+- fallback 输出必须能让最终报告继续生成。
+
+完成后请运行或说明以下验证：
+1. 正常模型调用路径是否仍然可以运行。
+2. 手动设置极短 timeout 时，workflow 是否不中断。
+3. 模型失败时，最终 Markdown 是否仍能生成。
+4. trace / errors 中是否能看到 node_name、error_type、attempts、latency_ms。

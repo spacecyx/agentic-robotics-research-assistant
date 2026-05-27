@@ -1,0 +1,109 @@
+请基于刚才实现的 query_understanding.py，实现 Section Prior Reranker。
+
+目标：
+新增一个 reranker，根据 query intent 和 chunk.section_title 对已有 RetrievalResult 进行轻量重排。
+
+允许新增或修改：
+- app/tools/rerankers/section_prior_reranker.py
+- app/tools/rerankers/factory.py，如果当前项目有 reranker factory
+- app/nodes/retrieve_context.py，只允许做最小接入
+- app/states.py，如需增加 reranker_type 可选说明
+- scripts/evaluate_retrievers.py，如需加入新方法名
+- README.md，如需补充一小段说明
+
+不允许修改：
+- retriever scoring 逻辑
+- TextChunk 基础字段语义
+- FAISS index 格式
+- LangGraph workflow 拓扑
+- eval_queries.json
+- LLM prompt
+
+一、Reranker 设计
+
+新增 reranker 类型：
+
+section_prior
+
+建议类名：
+
+SectionPriorReranker
+
+输入：
+- query: str
+- retrieval_results: list[RetrievalResult]
+- top_k: int
+
+输出：
+- reranked list[RetrievalResult]
+
+二、分数设计
+
+不要让 section prior 完全覆盖原始检索分数。
+
+建议公式：
+
+final_score = original_score * retrieval_weight + section_prior_score * section_prior_weight
+
+默认：
+- retrieval_weight = 0.8
+- section_prior_weight = 0.2
+
+如果项目已有 retriever_weight 参数，也可以复用：
+- final_score = original_score * retriever_weight + section_prior_score * (1 - retriever_weight)
+
+要求：
+- final score 写回 RetrievalResult.score 或 metadata["rerank_score"]，请保持与现有 reranker 风格一致。
+- metadata 中保留：
+  - original_score
+  - query_intent
+  - section_title
+  - section_prior_score
+  - reranker = "section_prior"
+  - rank_before_rerank
+
+三、排序规则
+
+排序：
+- 按 final_score 降序。
+- 保留 top_k。
+- 给 metadata 写入新的 rank。
+
+四、无 section_title 情况
+
+如果 chunk 没有 section_title：
+- section_prior_score = 0.0
+- 仍然保留该结果
+- 不要报错
+
+五、接入方式
+
+请让 CLI 可以通过已有 reranker 参数使用：
+
+--reranker-type section_prior
+
+如果当前命令行不是这个参数名，请遵循项目现有命名。
+
+六、Evaluation 接入
+
+在 scripts/evaluate_retrievers.py 中增加可选方法：
+
+- tfidf+section_prior_rerank
+- hybrid+section_prior_rerank
+
+如果当前 evaluate_retrievers.py 的方法列表是硬编码，请做最小修改。
+
+注意：
+- 不改变已有指标定义。
+- latency 应自然包含 section_prior rerank 成本。
+- 不修改 eval_queries.json。
+
+七、完成后输出
+
+请说明：
+1. 修改了哪些文件。
+2. 新增 reranker 如何调用。
+3. final_score 如何计算。
+4. metadata 新增了哪些字段。
+5. evaluation 新增了哪些方法。
+6. 建议我运行哪些验证命令。

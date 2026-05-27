@@ -1,0 +1,56 @@
+请实现一个轻量级 LLM 调用容错封装，但暂时不要改造现有 LangGraph 节点。
+
+目标：
+新增一个统一的 safe_llm_invoke 工具函数，用于包装现有 LLM 调用，支持 timeout、有限重试、异常分类、latency 统计和结构化返回。
+
+请根据当前项目结构选择合适位置，例如：
+- app/llm/safe_invoke.py
+或
+- app/utils/llm_safe_call.py
+
+请实现以下能力：
+
+1. 提供 safe_llm_invoke(...) 函数。
+2. 支持参数：
+   - llm 或 callable：实际模型调用对象
+   - prompt 或 messages：传入模型的输入
+   - node_name：当前调用来自哪个节点
+   - timeout_seconds：默认 60
+   - max_retries：默认 2
+   - retry_backoff_seconds：默认 1.0
+3. 返回结构化结果，不要只返回字符串。建议结构：
+   {
+       "ok": bool,
+       "content": str,
+       "error_type": str | None,
+       "error_message": str | None,
+       "attempts": int,
+       "latency_ms": float,
+       "node_name": str
+   }
+4. 支持错误分类：
+   - timeout
+   - rate_limit
+   - network_error
+   - api_error
+   - content_too_long
+   - unknown_error
+5. 对 timeout、network_error、rate_limit、api_error 做有限重试。
+6. 对 content_too_long 不要反复重试。
+7. 不要引入复杂依赖，优先使用 Python 标准库。
+8. 保持兼容当前项目已有的 LLM 调用方式。
+
+重要限制：
+- 不要修改现有节点。
+- 不要修改 RAG 检索逻辑。
+- 不要修改 evaluate_retrievers.py。
+- 不要修改 README。
+- 不要引入异步重构。
+- 不要引入多模型 fallback。
+- 不要改变当前主流程行为。
+
+完成后请输出：
+1. 新增/修改了哪些文件。
+2. safe_llm_invoke 的使用示例。
+3. 你建议下一步优先接入哪些节点。
+4. 可以运行的最小验证命令。

@@ -91,6 +91,34 @@ def parse_args() -> argparse.Namespace:
         help="RRF constant used when merging multi-query retrieval results.",
     )
 
+    parser.add_argument(
+        "--reranker-type",
+        type=str,
+        default="score_fusion",
+        choices=["keyword", "score_fusion", "section_prior", "none"],
+        help="Reranker type used after first-stage retrieval.",
+    )
+
+    parser.add_argument(
+        "--retriever-weight",
+        type=float,
+        default=0.7,
+        help="Weight of original retriever score in score-based rerankers.",
+    )
+
+    parser.add_argument(
+        "--trace-dir",
+        type=str,
+        default="outputs/traces",
+        help="Directory used to save lightweight workflow trace JSON files.",
+    )
+
+    parser.add_argument(
+        "--disable-trace",
+        action="store_true",
+        help="Disable lightweight workflow trace JSON output.",
+    )
+
     return parser.parse_args()
 
 
@@ -158,6 +186,10 @@ def main() -> None:
         "query_expansion_max_queries": args.query_expansion_max_queries,
         "multi_query_per_query_k": args.multi_query_per_query_k,
         "multi_query_rrf_k": args.multi_query_rrf_k,
+        "reranker_type": args.reranker_type,
+        "retriever_weight": args.retriever_weight,
+        "trace_dir": args.trace_dir,
+        "disable_trace": args.disable_trace,
     }
 
     # 展示选择的模型
@@ -170,6 +202,8 @@ def main() -> None:
 
     print("========== FINAL REPORT ==========\n")
     print(f"Report saved to: {result.get('output_path', '')}")
+    if result.get("trace_path"):
+        print(f"Trace saved to: {result.get('trace_path', '')}")
 
 
 if __name__ == "__main__":

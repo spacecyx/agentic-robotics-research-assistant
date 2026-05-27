@@ -1,0 +1,5 @@
+{'rank': 1, 'chunk_id': 34, 'section': 'Experiments', 'score': 0.6935786876074825, 'query_intent': 'experiment', 'section_prior_score': 1.0, 'rerank_score': 0.6935786876074825}
+{'rank': 2, 'chunk_id': 35, 'section': 'Experiments', 'score': 0.5986888204792928, 'query_intent': 'experiment', 'section_prior_score': 1.0, 'rerank_score': 0.5986888204792928}
+{'rank': 3, 'chunk_id': 33, 'section': 'Experiments', 'score': 0.5168070797048046, 'query_intent': 'experiment', 'section_prior_score': 1.0, 'rerank_score': 0.5168070797048046}
+{'rank': 4, 'chunk_id': 24, 'section': 'Experiments', 'score': 0.46984320410994357, 'query_intent': 'experiment', 'section_prior_score': 1.0, 'rerank_score': 0.46984320410994357}
+{'rank': 5, 'chunk_id': 4, 'section': 'Introduction', 'score': 0.4540683452882546, 'query_intent': 'experiment', 'section_prior_score': 0.0, 'rerank_score': 0.4540683452882546}

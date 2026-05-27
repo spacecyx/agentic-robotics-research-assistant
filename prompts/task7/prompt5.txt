@@ -1,0 +1,8 @@
+请给出我本地验证 Query Intent Understanding + Section Prior Reranker 的命令。
+
+要求：
+1. 给出 query intent classifier 的快速验证命令。
+2. 给出主流程使用 --reranker-type section_prior 的运行命令。
+3. 给出 evaluate_retrievers.py 对比 section_prior_rerank 的命令。
+4. 给出查看 trace JSON 中 query_intent / section_prior_score 的命令。
+5. 说明我应该重点观察哪些结果。

@@ -4,6 +4,7 @@
 from app.tools.rerankers.base import BaseReranker
 from app.tools.rerankers.keyword_reranker import KeywordReranker
 from app.tools.rerankers.score_fusion_reranker import ScoreFusionReranker
+from app.tools.rerankers.section_prior_reranker import SectionPriorReranker
 
 
 def create_reranker(
@@ -16,6 +17,7 @@ def create_reranker(
     支持：
     1. keyword
     2. score_fusion / fusion
+    3. section_prior
     """
 
     reranker_type = reranker_type.lower().strip()
@@ -28,7 +30,12 @@ def create_reranker(
             retriever_weight=retriever_weight,
         )
 
+    if reranker_type == "section_prior":
+        return SectionPriorReranker(
+            retrieval_weight=retriever_weight,
+        )
+
     raise ValueError(
         f"Unsupported reranker_type: {reranker_type}. "
-        "Supported types: keyword, score_fusion."
+        "Supported types: keyword, score_fusion, section_prior."
     )

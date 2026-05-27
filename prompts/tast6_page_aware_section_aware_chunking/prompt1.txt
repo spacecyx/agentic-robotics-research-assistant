@@ -1,0 +1,62 @@
+你现在是这个项目的 RAG 文档结构化工程师。
+
+项目背景：
+Agentic Robotics Research Assistant 是一个面向机器人 / SLAM / 3D 感知论文阅读的 LangGraph-based RAG workflow。当前已经实现：
+- PDF parsing
+- text cleaning
+- fixed-size text chunking
+- TF-IDF / Embedding / Hybrid / FAISS retrieval
+- Query Expansion
+- Rerank
+- Evidence-aware Markdown report
+- Retriever evaluation
+- JSON trace logging
+
+当前问题：
+trace logging 显示，对于 query “What are the main contributions of this paper?”，当前检索可能返回偏后部实验或架构细节 chunk，而不是 Abstract / Introduction / Contributions 相关 chunk。当前 chunk 主要只有 chunk_id、start_char、end_char，缺少 page 和 section 信息。
+
+本次任务：
+升级 RAG 的文档结构化能力，设计并实现 page-aware / section-aware chunking。
+
+但本轮先不要修改代码，请只读分析。
+
+请检查以下文件：
+- app/tools/pdf_loader_pro.py
+- app/tools/text_splitter.py
+- app/tools/context_builder.py
+- app/tools/retrievers/schemas.py
+- app/tools/retrievers/tfidf_retriever.py
+- app/tools/retrievers/embedding_retriever.py
+- app/tools/retrievers/hybrid_retriever.py
+- app/tools/retrievers/faiss_retriever.py
+- app/nodes/load_pdf.py
+- app/nodes/split_text.py
+- app/nodes/retrieve_context.py
+- app/nodes/generate_report.py
+- app/tools/trace_writer.py
+- scripts/evaluate_retrievers.py
+
+请回答：
+
+1. 当前 PDF loader 是否保留 page 信息？
+2. 当前 clean 后的 paper_text 是否还能反推出 page number？
+3. 当前 TextChunk 数据结构有哪些字段？
+4. 当前 retriever 是否依赖 TextChunk 的字段？
+5. 如果给 TextChunk 增加 metadata，比如 page_start、page_end、section_title，会影响哪些模块？
+6. 当前 ContextBuilder / Evidence 是否能展示 page 和 section？
+7. 当前 report / trace 是否可以展示 page 和 section？
+8. 实现 page-aware chunking 有哪两种方案：
+   - 最小方案：基于 raw_text 中已有 [Page X] marker 反推 page range
+   - 完整方案：PDF loader 返回 page-level documents，再由 splitter 生成 page-aware chunks
+9. 你建议当前项目采用哪种方案？为什么？
+10. 给出最小改动方案，不要大重构。
+11. 给出需要修改的文件清单。
+12. 给出验证命令和验收标准。
+
+严格要求：
+- 本轮不要修改代码。
+- 不要重构所有 retriever。
+- 不要改变现有 CLI 用法。
+- 不要破坏已有 evaluation。
+- 不要删除旧字段 start_char / end_char。
+- 新增 page / section metadata 必须向后兼容。

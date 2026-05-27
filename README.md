@@ -48,9 +48,10 @@
 - **LangGraph workflow**：用节点化流程组织论文分析任务。
 - **Modular retrievers**：支持 TF-IDF、Embedding、Hybrid、FAISS。
 - **Query expansion and multi-query RRF**：支持启发式 query expansion、多 query 检索和 RRF-style 融合。
-- **Reranking**：支持 keyword reranker 和 score fusion reranker。
+- **Reranking**：支持 keyword、score fusion 和 section prior reranker。
 - **Context construction**：控制上下文长度，并保留 chunk-level evidence metadata。
-- **Evidence-aware Markdown report**：报告中展示 chunk id、score、rank、source、char range。
+- **Evidence-aware Markdown report**：报告中展示 chunk id、score、rank、source、page range、section、char range。
+- **LLM invocation safety**：LLM 调用支持 timeout、有限 retry、错误分类、fallback 输出和 trace/error logging。
 - **Retriever evaluation**：支持 Hit@1、Hit@3、Hit@K、MRR@K、Avg Rank、Latency，并导出 CSV / Markdown。
 
 ## System Architecture
@@ -109,7 +110,22 @@ outputs/
 
 ### Rerank
 
-对 first-stage retrieved candidates 二次排序。当前实现包括 keyword rerank 和 score fusion rerank。
+对 first-stage retrieved candidates 二次排序。当前实现包括 keyword rerank、score fusion rerank 和 section prior rerank。
+
+Section prior reranker 使用轻量规则式 query intent classifier，不调用 LLM。它根据 query intent 和 chunk section metadata 给候选结果一个小的 section bias，例如 method 类问题更偏向 Method / Approach / Model，experiment 类问题更偏向 Experiments / Evaluation / Results。该模块只对已召回 candidates 重排，不改变底层 retriever scoring，也不凭空召回新 chunk。
+
+### LLM Safety and Traceability
+
+`summarize_paper_node` 和 `critique_paper_node` 通过统一的 `safe_llm_invoke` 调用 LLM，支持：
+
+- timeout control
+- limited retry
+- error classification
+- latency statistics
+- fallback output
+- trace/error logging
+
+如果 LLM 调用失败，workflow 不会直接中断，而是在报告中写入清晰的 fallback 文本，并在 trace JSON 中记录 `llm_invocations` 和 `errors`。这不是 production-grade high availability 机制，而是为了让本地 RAG workflow 在 API timeout、网络错误或上下文过长时更容易调试和复现。
 
 ## Evaluation
 
@@ -145,7 +161,9 @@ outputs/eval/
 | embedding | 0.417 | 0.583 | 0.667 | 0.507 | 3.167 | 7.71 |
 | hybrid | 0.417 | 0.500 | 0.667 | 0.496 | 3.333 | 7.71 |
 | tfidf+keyword_rerank | 0.417 | 0.667 | 0.750 | 0.544 | 2.917 | 0.96 |
+| tfidf+section_prior_rerank | 0.333 | 0.500 | 0.667 | 0.440 | 3.500 | 0.31 |
 | hybrid+score_fusion_rerank | 0.333 | 0.500 | 0.750 | 0.471 | 3.333 | 9.37 |
+| hybrid+section_prior_rerank | 0.500 | 0.583 | 0.750 | 0.579 | 2.917 | 5.26 |
 | hybrid+query_expansion | 0.333 | 0.583 | 0.667 | 0.447 | 3.417 | 35.44 |
 | hybrid+query_expansion+score_fusion_rerank | 0.417 | 0.583 | 0.667 | 0.521 | 3.083 | 34.13 |
 
@@ -230,6 +248,49 @@ python -m app.main \
   --multi-query-per-query-k 8
 ```
 
+Section prior rerank 示例：
+
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What experiments and evaluation are reported in this paper?" \
+  --top-k 5 \
+  --retriever-type hybrid \
+  --reranker-type section_prior \
+  --retriever-weight 0.8
+```
+
+Trace logging 默认开启，主流程会在 `outputs/traces/` 下保存轻量 JSON trace。Trace 只记录配置、中间状态摘要、短 preview 和输出路径，不记录完整论文全文、完整 retrieved context、完整 report 或 API key。
+
+Trace 中会记录检索和生成相关的结构化 metadata，例如：
+
+- retrieved chunk 的 page range / section
+- section prior rerank 的 `query_intent`、`section_prior_score`
+- LLM 调用的 `llm_invocations`
+- 失败时的 `errors`、`fallback_used`、`error_type`、`attempts`、`latency_ms`
+
+自定义 trace 输出目录：
+
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What are the main contributions of this paper?" \
+  --top-k 3 \
+  --retriever-type tfidf \
+  --trace-dir outputs/traces
+```
+
+关闭 trace：
+
+```bash
+python -m app.main \
+  --pdf data/resnet.pdf \
+  --query "What are the main contributions of this paper?" \
+  --top-k 3 \
+  --retriever-type tfidf \
+  --disable-trace
+```
+
 ### 4. Run Retriever Evaluation
 
 ```bash
@@ -246,6 +307,26 @@ python -m scripts.evaluate_retrievers \
 outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.csv
 outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.md
 ```
+
+不保存评估结果、只看命令行输出：
+
+```bash
+python -m scripts.evaluate_retrievers \
+  --pdf data/resnet.pdf \
+  --eval-json data/eval_queries.json \
+  --top-k 5 \
+  --no-save-results
+```
+
+### 5. Run Smoke Tests
+
+LLM safe invoke 离线 smoke test：
+
+```bash
+python scripts/test_safe_llm_invoke.py
+```
+
+该脚本不请求外部 LLM API，覆盖成功调用、普通异常、timeout、content-too-long 不重试等场景。
 
 ## Example Output
 
@@ -267,6 +348,14 @@ outputs/
 - paper summary
 - technical critique
 
+如果 LLM 调用失败，报告会继续生成，并额外包含简短的：
+
+```text
+Generation Warnings
+```
+
+正常路径不会输出该 warning 小节。
+
 ## Project Structure
 
 ```text
@@ -278,14 +367,18 @@ app/
   nodes/legacy/            archived old nodes
   tools/
     retrievers/            TF-IDF, embedding, hybrid, FAISS, multi-query
-    rerankers/             keyword and score-fusion rerankers
+    rerankers/             keyword, score-fusion, section-prior rerankers
     vector_store/          FAISS vector store
     context_builder.py     evidence-aware context construction
+    llm_safe_call.py       safe LLM invocation wrapper
+    query_understanding.py rule-based query intent classifier
     report_writer.py       Markdown report saving
+    trace_writer.py        lightweight workflow trace writer
 
 scripts/
   evaluate_retrievers.py   retrieval evaluation
   compare_retrievers.py    retriever comparison
+  test_safe_llm_invoke.py  offline LLM safety smoke test
   test_*.py                smoke tests and module checks
 
 data/
@@ -302,18 +395,19 @@ docs/
 
 - 当前是 workflow-first，不是完整 autonomous agent。
 - LangGraph 主流程仍是线性图，尚未加入条件分支和自动 query rewrite。
-- chunking 仍是 fixed-size character chunking，不是 section-aware chunking。
-- citation 当前主要是 chunk id / char range，不是 page-level citation。
+- chunking 仍以 fixed-size character chunking 为主，但已附加启发式 page range / section metadata。
+- citation 当前已包含启发式 page range / section，但还不是严格的版面级 citation。
 - evaluation 仍是 keyword-based weak evaluation。
 - query expansion 当前是 heuristic-based，泛化性有限。
+- LLM safety 已有 timeout / retry / fallback / trace 记录，但还不是生产级可观测性或多模型 fallback。
 - 尚未加入 faithfulness evaluation。
 - 尚未提供 Web UI。
 
 ## Roadmap
 
-- **Trace logging**：记录 PDF、retriever、top_k、candidate_k、latency、output path。
-- **Minimal pytest**：覆盖 `text_splitter`、`query_expansion`、`reranker`、`context_builder`、`report_writer`。
-- **Section-aware chunking**：按 section / paragraph / page 信息组织 chunk。
-- **Page citation**：将 evidence 从 char range 升级为 page-level citation。
+- **Trace logging**：继续增强 LLM 调用、retrieval、rerank 和报告生成的可复现记录。
+- **Minimal tests**：补充核心模块的最小 smoke/pytest 测试，优先覆盖 `text_splitter`、`query_expansion`、`reranker`、`context_builder`、`llm_safe_call`。
+- **Section-aware chunking**：从启发式 section metadata 逐步升级到更稳定的 section / paragraph / page-aware chunking。
+- **Page citation**：将启发式 page range 继续增强为更可靠的 page-level citation。
 - **Conditional LangGraph branch**：检索不足时自动 query expansion，context 为空时跳过 LLM 并给出明确错误。
 - **Streamlit demo**：展示 PDF、query、answer/report 和 retrieved evidence。

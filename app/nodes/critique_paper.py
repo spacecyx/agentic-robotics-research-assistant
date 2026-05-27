@@ -3,6 +3,7 @@
 
 from app.states import PaperState
 from app.tools.llm_client import get_llm
+from app.tools.llm_safe_call import classify_llm_error, safe_llm_invoke
 
 
 CRITIQUE_PROMPT = """
@@ -64,16 +65,100 @@ def critique_paper_node(state: PaperState) -> PaperState:
     """
     print(">>> running critique_paper_node")
     
-    llm = get_llm()
-
     prompt = CRITIQUE_PROMPT.format(
         retrieved_context=state["retrieved_context"], 
         paper_summary=state["paper_summary"]
     )
 
-    response = llm.invoke(prompt)
+    node_name = "critique_paper_node"
+    errors = list(state.get("errors", []))
+    llm_invocations = list(state.get("llm_invocations", []))
+    timeout_seconds = state.get("llm_timeout_seconds", 60)
+    max_retries = state.get("llm_max_retries", 2)
+    retry_backoff_seconds = state.get("llm_retry_backoff_seconds", 1.0)
+
+    try:
+        llm = get_llm()
+    except Exception as error:
+        error_type = classify_llm_error(error)
+        error_record = {
+            "node_name": node_name,
+            "error_type": error_type,
+            "error_message": str(error),
+            "attempts": 0,
+            "latency_ms": 0.0,
+        }
+        errors.append(error_record)
+        llm_invocations.append(
+            {
+                "node_name": node_name,
+                "ok": False,
+                "error_type": error_type,
+                "error_message": str(error),
+                "attempts": 0,
+                "latency_ms": 0.0,
+                "timeout_seconds": timeout_seconds,
+                "max_retries": max_retries,
+                "fallback_used": True,
+            }
+        )
+
+        return {
+            **state,
+            "paper_critique": (
+                f"[LLM generation failed in {node_name}: {error_type}. "
+                "Please check trace log for details.]"
+            ),
+            "errors": errors,
+            "llm_invocations": llm_invocations,
+        }
+
+    result = safe_llm_invoke(
+        llm=llm,
+        prompt=prompt,
+        node_name=node_name,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        retry_backoff_seconds=retry_backoff_seconds,
+    )
+    llm_invocations.append(
+        {
+            "node_name": result["node_name"],
+            "ok": result["ok"],
+            "error_type": result["error_type"],
+            "error_message": result["error_message"],
+            "attempts": result["attempts"],
+            "latency_ms": result["latency_ms"],
+            "timeout_seconds": timeout_seconds,
+            "max_retries": max_retries,
+            "fallback_used": not result["ok"],
+        }
+    )
+
+    if not result["ok"]:
+        errors.append(
+            {
+                "node_name": result["node_name"],
+                "error_type": result["error_type"],
+                "error_message": result["error_message"],
+                "attempts": result["attempts"],
+                "latency_ms": result["latency_ms"],
+            }
+        )
+
+        return {
+            **state,
+            "paper_critique": (
+                f"[LLM generation failed in {node_name}: {result['error_type']}. "
+                "Please check trace log for details.]"
+            ),
+            "errors": errors,
+            "llm_invocations": llm_invocations,
+        }
 
     return {
         **state,
-        "paper_critique": response.content,
+        "paper_critique": result["content"],
+        "errors": errors,
+        "llm_invocations": llm_invocations,
     }
