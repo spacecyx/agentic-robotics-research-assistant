@@ -1,0 +1,51 @@
+请为 LLM 调用容错机制增加最小测试或 smoke test。
+
+目标：
+验证 safe_llm_invoke 在成功、超时、异常、不可重试错误等情况下行为正确。
+
+请优先新增轻量测试文件，例如：
+- tests/test_safe_llm_invoke.py
+或
+- scripts/test_safe_llm_invoke.py
+
+根据当前项目是否已有 pytest 来决定：
+1. 如果已有 pytest 测试结构，请使用 pytest。
+2. 如果没有测试框架，请新增一个可直接运行的 scripts/test_safe_llm_invoke.py。
+
+测试场景至少包括：
+
+1. 正常成功：
+   - fake_llm 返回固定字符串
+   - result["ok"] == True
+   - content 正确
+   - attempts == 1
+
+2. 普通异常：
+   - fake_llm 抛出 RuntimeError
+   - result["ok"] == False
+   - error_type 不为空
+   - attempts 符合 max_retries 设置
+
+3. timeout：
+   - 使用一个 sleep 超过 timeout_seconds 的 fake callable
+   - result["ok"] == False
+   - error_type == "timeout"
+
+4. content_too_long：
+   - 模拟上下文过长错误
+   - 不应进行无意义重试
+
+要求：
+- 不要真实请求外部 LLM API。
+- 不要依赖网络。
+- 不要依赖 HuggingFace 下载。
+- 不要暴露任何 API key。
+- 测试必须可在本地离线运行。
+- 如果当前项目没有 pytest，不要强行引入复杂依赖。
+
+完成后请运行：
+- pytest tests/test_safe_llm_invoke.py
+或
+- python scripts/test_safe_llm_invoke.py
+
+最后请给出测试结果摘要。

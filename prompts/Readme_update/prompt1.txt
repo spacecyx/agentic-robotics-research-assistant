@@ -1,0 +1,61 @@
+请只更新 README，不要修改任何代码文件。
+
+项目路径：
+./agentic-robotics-research-assistant/README.md
+
+背景：
+这是一个面向机器人 / SLAM / 3D 感知论文阅读场景的 Agentic RAG 项目。昨天我又添加了一些模块，但我记不清具体改了哪些。请先通过 git status 和 git diff 定位新增/修改内容，再在当前 README.md 的基础上做增量更新和适度优化。
+
+请按以下步骤执行：
+
+1. 先审计当前工作区状态，不要立即改文件：
+   - 运行 git status --short
+   - 运行 git diff --stat
+   - 运行 git diff --name-status
+   - 如果存在 staged changes，也检查 git diff --cached --stat 和 git diff --cached --name-status
+   - 如果工作区是 clean，再查看最近提交：git log --oneline -5，并根据需要查看最近一次提交的 diff/stat
+
+2. 阅读当前 README：
+   - 打开 ./agentic-robotics-research-assistant/README.md
+   - 保留原有整体结构和语言风格
+   - 不要重写成全新的 README
+   - 只在必要位置补充、调整、润色
+
+3. 根据 git diff 中实际新增/修改的模块，更新 README：
+   - 新增模块必须基于真实代码内容描述，不要猜测
+   - 如果新增了 LLM 调用容错机制，请补充说明：
+     - timeout control
+     - limited retry
+     - error classification
+     - fallback output
+     - trace/error logging
+   - 如果新增了测试脚本、工具脚本、配置项或 CLI 参数，也请在 README 对应位置补充
+   - 如果新增了运行命令，请确认命令与当前代码一致
+   - 如果只是内部工程能力增强，不要夸大为 production-grade / high availability
+
+4. 优化 README 表达：
+   - 项目描述要更清楚，但不要变得浮夸
+   - 技术栈、workflow、features、usage、outputs、project progress 等部分保持一致
+   - 删除或修正已经过时的描述
+   - 对新增能力使用简洁、工程化的表述
+   - 保持 markdown 排版清晰
+
+5. 严格限制修改范围：
+   - 只能修改 README.md
+   - 不要修改 Python 代码
+   - 不要修改 tests
+   - 不要修改 requirements
+   - 不要修改配置文件
+   - 不要创建新文件
+
+6. 完成后请输出：
+   - 你通过 git status / git diff 发现了哪些新增或修改模块
+   - README 中具体更新了哪些部分
+   - 是否存在你没有写进 README 的改动，以及原因
+   - 最终请运行 git diff -- README.md，确认只改了 README
+
+验收标准：
+- README 能准确反映当前项目能力
+- 新增内容全部来自真实 git diff 或代码内容
+- 没有夸大未实现能力
+- 没有修改 README 以外的文件

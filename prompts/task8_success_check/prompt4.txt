@@ -1,0 +1,30 @@
+请增强当前项目的 trace logging，使 LLM 调用失败信息可以被稳定记录和复现。
+
+目标：
+当 safe_llm_invoke 发生失败或重试时，把关键元信息写入已有 trace 结构中。如果项目已有 trace logger，请复用；如果没有，请只做轻量级状态记录，不要引入复杂日志系统。
+
+需要记录的信息：
+
+1. node_name
+2. ok
+3. error_type
+4. error_message
+5. attempts
+6. latency_ms
+7. timeout_seconds
+8. max_retries
+9. fallback_used: true/false
+
+要求：
+1. 成功调用也可以记录 latency_ms，但不要让 trace 过于冗长。
+2. 失败调用必须记录。
+3. 最终报告中可以增加一个简短的 "LLM Invocation Warnings" 或 "Generation Warnings" 小节。
+4. 如果没有任何失败，不要在报告里输出吓人的错误小节。
+5. 不要改变已有 trace JSON 的核心结构；如果需要新增字段，请保持向后兼容。
+6. 不要影响 evaluate_retrievers.py 的指标输出。
+7. 不要影响已有 CSV / Markdown evaluation result 保存逻辑。
+
+完成后请输出：
+1. trace JSON 中新增字段示例。
+2. Markdown 报告中失败提示的示例。
+3. 正常路径和失败路径的验证方法。

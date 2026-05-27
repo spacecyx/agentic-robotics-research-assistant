@@ -3,7 +3,11 @@
 import argparse
 
 from app.tools.pdf_loader_pro import load_pdf_text, clean_paper_text
-from app.tools.text_splitter import split_text_into_chunks, preview_chunks
+from app.tools.text_splitter import (
+    build_page_spans_from_raw_text,
+    split_text_into_chunks,
+    preview_chunks,
+)
 
 
 def main() -> None:
@@ -38,12 +42,17 @@ def main() -> None:
     raw_text = load_pdf_text(args.pdf)
     # 去除空格，制表符，空行的文本清洗处理
     clean_text = clean_paper_text(raw_text)
+    page_spans = build_page_spans_from_raw_text(
+        raw_text=raw_text,
+        cleaned_text=clean_text,
+    )
 
     chunks = split_text_into_chunks(
         # text=raw_text,
         text=clean_text,
         chunk_size=args.chunk_size,
         chunk_overlap=args.chunk_overlap,
+        page_spans=page_spans,
     )
 
     print(f"Original text length: {len(raw_text)}")

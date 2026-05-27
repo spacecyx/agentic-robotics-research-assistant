@@ -1,0 +1,105 @@
+请开始实现 Query Intent Understanding 模块。
+
+目标：
+新增一个轻量、规则式 query intent classifier，用于识别论文阅读类 query 的意图。
+
+允许新增文件：
+- app/tools/query_understanding.py
+
+不允许修改：
+- retriever scoring 逻辑
+- LangGraph 主流程拓扑
+- LLM prompt
+- eval_queries.json
+
+请实现：
+
+一、Intent 类型
+
+建议支持以下 intent：
+
+- contribution
+- problem
+- method
+- architecture
+- experiment
+- result
+- limitation
+- related_work
+- dataset
+- metric
+- implementation
+- general
+
+二、规则式分类
+
+实现函数：
+
+classify_query_intent(query: str) -> str
+
+要求：
+- 输入 query 字符串。
+- 输出 intent 字符串。
+- 不调用 LLM。
+- 不引入新依赖。
+- 使用 lowercase + keyword rules 即可。
+- 如果无法判断，返回 general。
+
+示例规则：
+
+- 包含 contribution / novelty / propose / key idea / main idea -> contribution
+- 包含 problem / challenge / motivation / why -> problem
+- 包含 method / approach / algorithm / framework / pipeline -> method
+- 包含 architecture / module / network / block / layer -> architecture
+- 包含 experiment / evaluation / compare / baseline -> experiment
+- 包含 result / performance / accuracy / improvement / score -> result
+- 包含 limitation / weakness / drawback / failure / future work -> limitation
+- 包含 related work / prior work / previous methods -> related_work
+- 包含 dataset / benchmark / data -> dataset
+- 包含 metric / mAP / BLEU / accuracy / recall / precision -> metric
+- 包含 implementation / training / hyperparameter / learning rate / batch size -> implementation
+
+三、Preferred section mapping
+
+实现函数：
+
+get_preferred_sections(intent: str) -> list[str]
+
+建议映射：
+
+- contribution -> ["Abstract", "Introduction", "Conclusion"]
+- problem -> ["Abstract", "Introduction"]
+- method -> ["Method", "Methods", "Approach", "Model", "Deep Residual Learning"]
+- architecture -> ["Method", "Architecture", "Network", "Deep Residual Learning"]
+- experiment -> ["Experiments", "Evaluation", "Results"]
+- result -> ["Experiments", "Results"]
+- limitation -> ["Discussion", "Conclusion", "Limitations"]
+- related_work -> ["Related Work", "Background"]
+- dataset -> ["Experiments", "Dataset", "Evaluation"]
+- metric -> ["Experiments", "Results", "Evaluation"]
+- implementation -> ["Implementation", "Training", "Experiments"]
+- general -> []
+
+四、Section match scoring
+
+实现函数：
+
+compute_section_prior_score(section_title: str | None, preferred_sections: list[str]) -> float
+
+要求：
+- 如果 section_title 为空或 preferred_sections 为空，返回 0.0。
+- exact lowercase match 返回 1.0。
+- section_title 包含 preferred section 或 preferred section 包含 section_title，返回 0.7。
+- 否则返回 0.0。
+- 不要做复杂 fuzzy matching。
+
+五、简单自测
+
+如果项目当前没有 pytest，不要强行引入 pytest。
+可以添加或更新一个轻量脚本，或者只在实现后给出 python -c 验证命令。
+
+完成后请输出：
+1. 新增了哪些函数。
+2. 支持哪些 intent。
+3. 每类 intent 对应哪些 preferred sections。
+4. 建议我运行哪些命令验证。

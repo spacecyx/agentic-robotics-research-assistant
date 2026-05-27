@@ -1,0 +1,94 @@
+请按照刚才的分析，实现轻量 trace logging。
+
+本次目标：
+每次运行主流程时，在 outputs/traces/ 下生成一份 JSON trace 文件，用于记录本次运行的关键配置、中间状态摘要和输出信息。
+
+一、trace 输出路径
+
+默认输出目录：
+
+outputs/traces
+
+默认文件名格式：
+
+trace_YYYYMMDD_HHMMSS.json
+
+如果可行，请支持 CLI 参数：
+
+--trace-dir outputs/traces
+--disable-trace
+
+如果增加 CLI 参数改动过大，可以先默认开启 trace，并在输出中打印 trace 文件路径。
+
+二、记录原则
+
+请注意：
+
+1. 不要把完整 raw_text 写入 trace。
+2. 不要把完整 paper_text 写入 trace。
+3. 不要把完整 retrieved_context 写入 trace。
+4. 不要把完整 final_report 写入 trace。
+5. 对长文本只保存长度和最多 200 字 preview。
+6. 不要记录 API key、base_url 等敏感信息。
+7. evidence 中可以保存 chunk_id、rank、score、source、char range、短 preview。
+8. 如果 state 中没有某个字段，不要报错，使用 None 或跳过。
+
+三、实现建议
+
+优先使用 Python 标准库：
+
+- json
+- uuid
+- datetime
+- pathlib
+- typing
+
+可以新增工具文件：
+
+app/tools/trace_writer.py
+
+建议包含函数：
+
+- safe_preview(text: str, max_chars: int = 200) -> str
+- build_trace_from_state(state: PaperState) -> dict
+- save_trace(state: PaperState, trace_dir: str = "outputs/traces") -> str
+
+也可以根据现有项目风格调整命名。
+
+建议在 generate_report_node 末尾保存 trace，因为此时 State 最完整。
+
+如果需要在 PaperState 中增加字段，请只增加：
+
+- trace_dir
+- disable_trace
+- trace_path
+
+不要大规模重构 PaperState。
+
+四、允许修改范围
+
+允许修改：
+- app/main.py
+- app/states.py
+- app/nodes/generate_report.py
+- app/tools/trace_writer.py
+- README.md，如果需要补充一小段 trace 说明
+
+不允许修改：
+- retriever 实现
+- reranker 实现
+- evaluate_retrievers.py
+- app/graph.py 主流程
+- app/nodes/retrieve_context.py 的业务逻辑
+- eval data
+- prompts
+
+五、完成后输出
+
+请输出：
+1. 修改了哪些文件。
+2. 新增了哪些 CLI 参数。
+3. trace 文件默认保存到哪里。
+4. trace 中记录哪些内容。
+5. 哪些内容不会被记录。
+6. 建议我运行哪些命令验证。

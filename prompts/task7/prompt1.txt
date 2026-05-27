@@ -1,0 +1,67 @@
+你现在是这个项目的 RAG Semantic Reranking 工程师。
+
+项目背景：
+Agentic Robotics Research Assistant 是一个面向机器人 / SLAM / 3D 感知论文阅读的 LangGraph-based RAG workflow。
+
+当前项目已经完成：
+- PDF parsing
+- text cleaning
+- fixed-size chunking
+- page-aware / section-aware chunk metadata
+- TextChunk 支持 page_start / page_end / section_title
+- Evidence / Report / Trace 支持展示 page 和 section 信息
+- TF-IDF / Embedding / Hybrid / FAISS retrieval
+- Query Expansion
+- Multi-query RRF
+- Keyword rerank
+- Score fusion rerank
+- Retriever evaluation with Hit@K / MRR@K / Avg Rank / Latency
+
+当前问题：
+对于 “main contributions / method / experiment / limitation / related work” 这类论文阅读问题，系统不应该只根据词面或向量相似度检索，而应该结合 query intent 和 chunk 所在 section 做更符合论文结构的重排。
+
+本次任务：
+设计 Query Intent Understanding + Section Prior Reranker。
+
+但本轮先不要修改代码，请只读分析。
+
+请检查以下文件：
+- app/tools/text_splitter.py
+- app/tools/context_builder.py
+- app/tools/trace_writer.py
+- app/tools/retrievers/schemas.py
+- app/tools/rerankers/
+- app/tools/rerankers/factory.py，如果存在
+- app/nodes/retrieve_context.py
+- app/states.py
+- scripts/evaluate_retrievers.py
+- README.md
+
+请回答：
+
+1. 当前 reranker 体系有哪些类型？
+2. 当前 reranker 的统一接口是什么？
+3. 当前 retrieve_context_node 如何调用 reranker？
+4. 当前是否有 reranker factory？
+5. 新增 section_prior_reranker 最小接入点在哪里？
+6. 当前 TextChunk / RetrievalResult 是否已经能访问 section_title？
+7. 如果一个 chunk 没有 section_title，应该如何处理？
+8. Query intent classifier 应该放在哪里？
+   - 建议新增 app/tools/query_understanding.py
+9. Query intent 是否应该使用 LLM？
+   - 当前阶段建议不要使用 LLM，只用规则式轻量分类器。
+10. intent 类型应该如何设计？
+11. intent 到 preferred sections 的映射应该如何设计？
+12. section_prior_score 应如何计算？
+13. 如何避免 section prior 盖过原始 retrieval score？
+14. 如何在 evaluation 中新增该方法，而不改变现有指标定义？
+15. 给出最小修改方案和文件清单。
+
+严格要求：
+- 本轮不要修改代码。
+- 不要引入新依赖。
+- 不要调用 LLM 做 intent classification。
+- 不要改变现有 retriever scoring 逻辑。
+- 不要改变 LangGraph 主流程拓扑。
+- 不要改变 eval_queries.json 格式。
+- 新增能力必须向后兼容。

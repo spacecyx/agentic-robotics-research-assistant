@@ -1,0 +1,237 @@
+{
+  "run_id": "b1d93609-69c4-46f4-ae0b-e81db1d4f4b7",
+  "created_at": "2026-05-26T22:06:28",
+  "workflow": "paper_rag_report",
+  "input": {
+    "pdf_path": "data/resnet.pdf",
+    "query": "What experiments and evaluation are reported in this paper?",
+    "top_k": 5
+  },
+  "config": {
+    "retriever_type": "hybrid",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "faiss_index_dir": "data/index/resnet",
+    "rebuild_faiss_index": false,
+    "use_query_expansion": false,
+    "query_expansion_max_queries": 4,
+    "multi_query_per_query_k": 10,
+    "multi_query_rrf_k": 60,
+    "retriever_candidate_k": 15,
+    "reranker_type": "section_prior",
+    "reranker_top_k": 5,
+    "retriever_weight": 0.8,
+    "hybrid_alpha": null
+  },
+  "paper": {
+    "paper_title": "Deep Residual Learning for Image Recognition",
+    "raw_text": {
+      "chars": 59507,
+      "preview": "[Page 1] Deep Residual Learning for Image Recognition Kaiming He Xiangyu Zhang Shaoqing Ren Jian Sun Microsoft Research {kahe, v-xiangz, v-shren, jiansun}@microsoft.com Abstract Deeper neural networks..."
+    },
+    "paper_text": {
+      "chars": 30079,
+      "preview": "Deep Residual Learning for Image Recognition Kaiming He Xiangyu Zhang Shaoqing Ren Jian Sun Microsoft Research {kahe, v-xiangz, v-shren, jiansun}@microsoft.com Abstract Deeper neural networks are more..."
+    },
+    "chunks": {
+      "count": 36,
+      "preview_items": [
+        {
+          "chunk_id": 0,
+          "start_char": 0,
+          "end_char": 1000,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": "Abstract",
+          "text_preview": "Deep Residual Learning for Image Recognition Kaiming He Xiangyu Zhang Shaoqing Ren Jian Sun Microsoft Research {kahe, v-xiangz, v-shren, jiansun}@microsoft.com Abstract Deeper neural networks are more..."
+        },
+        {
+          "chunk_id": 1,
+          "start_char": 850,
+          "end_char": 1850,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": "Abstract",
+          "text_preview": "s achieves 3.57% error on the ImageNettest set. This result won the 1st place on the ILSVRC 2015 classiﬁcation task. We also present analysis on CIFAR-10 with 100 and 1000 layers. The depth of represe..."
+        },
+        {
+          "chunk_id": 2,
+          "start_char": 1700,
+          "end_char": 2700,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": "Introduction",
+          "text_preview": "d-to-end multi- layer fashion, and the “levels” of features can be enriched by the number of stacked layers (depth). Recent evidence [41, 44] reveals that network depth is of crucial importance, and t..."
+        },
+        {
+          "chunk_id": 3,
+          "start_char": 2550,
+          "end_char": 3550,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": "Introduction",
+          "text_preview": "or. Similar phenomena on ImageNet is presented in Fig. 4. greatly beneﬁted from very deep models. Driven by the signiﬁcance of depth, a question arises:Is learning better networks as easy as stacking..."
+        },
+        {
+          "chunk_id": 4,
+          "start_char": 3400,
+          "end_char": 4400,
+          "page_start": 1,
+          "page_end": 2,
+          "section_title": "Introduction",
+          "text_preview": "tedly, such degradation is not caused by overﬁtting , and adding more layers to a suitably deep model leads to higher train- ing error, as reported in [11, 42] and thoroughly veriﬁed by our experiment..."
+        }
+      ]
+    }
+  },
+  "retrieval": {
+    "expanded_queries": [
+      "What experiments and evaluation are reported in this paper?"
+    ],
+    "retrieval_results": {
+      "count": 5,
+      "preview_items": [
+        {
+          "rank": 1,
+          "chunk_id": 34,
+          "score": 0.6935786876074825,
+          "source": "hybrid+section_prior_rerank",
+          "start_char": 28900,
+          "end_char": 29900,
+          "page_start": 7,
+          "page_end": 7,
+          "section_title": "Experiments",
+          "text_preview": "l results. Our baseline 34-layer ResNets have achieved very compet- itive accuracy. Our 152-layer ResNet has a single-model top-5 validation error of 4.49%. This single-model result outperforms all pr...",
+          "metadata": {
+            "rank": 1,
+            "rank_before_rerank": 1,
+            "reranker": "section_prior",
+            "query_intent": "experiment",
+            "section_prior_score": 1.0,
+            "rerank_score": 0.6935786876074825,
+            "multi_query": null,
+            "matched_query_count": null,
+            "best_original_rank": null
+          }
+        },
+        {
+          "rank": 2,
+          "chunk_id": 35,
+          "score": 0.5986888204792928,
+          "source": "hybrid+section_prior_rerank",
+          "start_char": 29750,
+          "end_char": 30079,
+          "page_start": 7,
+          "page_end": 7,
+          "section_title": "Experiments",
+          "text_preview": "es as follows. The plain/residual architectures follow the form in Fig. 3 (middle/right). The network inputs are 32×32 images, with the per-pixel mean subtracted. The ﬁrst layer is 3×3 convo- lutions....",
+          "metadata": {
+            "rank": 2,
+            "rank_before_rerank": 4,
+            "reranker": "section_prior",
+            "query_intent": "experiment",
+            "section_prior_score": 1.0,
+            "rerank_score": 0.5986888204792928,
+            "multi_query": null,
+            "matched_query_count": null,
+            "best_original_rank": null
+          }
+        },
+        {
+          "rank": 3,
+          "chunk_id": 33,
+          "score": 0.5168070797048046,
+          "source": "hybrid+section_prior_rerank",
+          "start_char": 28050,
+          "end_char": 29050,
+          "page_start": 7,
+          "page_end": 7,
+          "section_title": "Experiments",
+          "text_preview": "3-layer bottleneck block, resulting in a 50-layer ResNet (Table 1). We use option B for increasing dimensions. This model has 3.8 billion FLOPs. 101-layer and 152-layer ResNets: We construct 101- laye...",
+          "metadata": {
+            "rank": 3,
+            "rank_before_rerank": 5,
+            "reranker": "section_prior",
+            "query_intent": "experiment",
+            "section_prior_score": 1.0,
+            "rerank_score": 0.5168070797048046,
+            "multi_query": null,
+            "matched_query_count": null,
+            "best_original_rank": null
+          }
+        },
+        {
+          "rank": 4,
+          "chunk_id": 24,
+          "score": 0.46984320410994357,
+          "source": "hybrid+section_prior_rerank",
+          "start_char": 20400,
+          "end_char": 21400,
+          "page_start": 5,
+          "page_end": 5,
+          "section_title": "Experiments",
+          "text_preview": "2048  ×3 1×1 average pool, 1000-d fc, softmax FLOPs 1.8×109 3.6×109 3.8×109 7.6×109 11.3×109 Table 1. Architectures for ImageNet. Building blocks are shown in brackets (see also Fig. 5), with the nu...",
+          "metadata": {
+            "rank": 4,
+            "rank_before_rerank": 7,
+            "reranker": "section_prior",
+            "query_intent": "experiment",
+            "section_prior_score": 1.0,
+            "rerank_score": 0.46984320410994357,
+            "multi_query": null,
+            "matched_query_count": null,
+            "best_original_rank": null
+          }
+        },
+        {
+          "rank": 5,
+          "chunk_id": 4,
+          "score": 0.4540683452882546,
+          "source": "hybrid+section_prior_rerank",
+          "start_char": 3400,
+          "end_char": 4400,
+          "page_start": 1,
+          "page_end": 2,
+          "section_title": "Introduction",
+          "text_preview": "tedly, such degradation is not caused by overﬁtting , and adding more layers to a suitably deep model leads to higher train- ing error, as reported in [11, 42] and thoroughly veriﬁed by our experiment...",
+          "metadata": {
+            "rank": 5,
+            "rank_before_rerank": 2,
+            "reranker": "section_prior",
+            "query_intent": "experiment",
+            "section_prior_score": 0.0,
+            "rerank_score": 0.4540683452882546,
+            "multi_query": null,
+            "matched_query_count": null,
+            "best_original_rank": null
+          }
+        }
+      ]
+    },
+    "retrieved_context": {
+      "chars": 3801,
+      "preview": "[Source 1 | chunk_id=34 | page=7 | section=Experiments | score=0.6936 | rank=1 | source=hybrid+section_prior_rerank] l results. Our baseline 34-layer ResNets have achieved very compet- itive accuracy...."
+    },
+    "retrieval_evidence": {
+      "chars": 563,
+      "preview": "[1] chunk_id=34, score=0.6936, rank=1, source=hybrid+section_prior_rerank, page_range=(7, 7), section=Experiments, char_range=(28900, 29900) [2] chunk_id=35, score=0.5987, rank=2, source=hybrid+sectio..."
+    }
+  },
+  "llm_outputs": {
+    "paper_summary": {
+      "chars": 1483,
+      "preview": "## 论文摘要 ### 1. 论文主题 这篇论文主要研究了深度残差网络（ResNet）在图像分类任务中的性能，特别是在极深网络结构下的表现。作者通过构建不同深度的ResNet模型（如34层、50层、101层和152层），验证了残差学习框架在缓解深度网络退化问题方面的有效性，并展示了其在ImageNet和CIFAR-10数据集上的优越性能。 ### 2. 研究问题 作者旨在解决深度神经网络在训练过程..."
+    },
+    "paper_critique": {
+      "chars": 2814,
+      "preview": "## 论文批判性分析 ### 1. 必须掌握的内容 - **残差块（Residual Block）的设计思想**：这是论文的核心贡献，通过引入“跳跃连接”（skip connection）来缓解深度网络的退化问题，使得网络可以训练得更深而不影响性能。 - **极深网络的训练稳定性**：理解为何普通网络在深度增加时性能下降，而残差网络可以避免这一问题，是掌握该论文思想的关键。 - **计算复杂度控制..."
+    }
+  },
+  "outputs": {
+    "report_path": "outputs/resnet_rag_report_20260526_220628.md",
+    "final_report": {
+      "chars": 17802,
+      "preview": "# Paper Analysis Report ## Input - PDF: `data/resnet.pdf` - Query: What experiments and evaluation are reported in this paper? ## Paper Title Deep Residual Learning for Image Recognition ## Retrieval..."
+    },
+    "trace_path": "outputs/traces/trace_20260526_220628.json"
+  }
+}
