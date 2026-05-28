@@ -1,0 +1,41 @@
+你现在只做 Evidence Verifier 设计审计，不要修改任何文件。
+
+目标：
+基于当前项目结构，设计一个轻量 evidence verifier 节点，用于检查 summary / critique 中的关键句是否能在 retrieved evidence 中找到支持。
+
+请阅读：
+- app/graph.py
+- app/states.py
+- summarize_paper_node
+- critique_paper_node
+- generate_report_node
+- app/tools/context_builder.py
+- app/tools/report_writer.py
+- app/tools/trace_writer.py
+- 当前 retrieved chunks / context 的数据结构
+- 当前 SentenceTransformers 是否已在 embedding retriever 中可复用
+
+请输出：
+1. 当前 summary / critique 在 State 中如何保存。
+2. 当前 retrieved evidence 如何保存，是否包含 chunk text 和 metadata。
+3. verifier 最适合作为哪个节点之后、哪个节点之前：
+   - summarize / critique 之后？
+   - generate_report 之前？
+4. 推荐的最小 verifier 方法：
+   - 规则句子切分
+   - claim sentence extraction
+   - lexical overlap / embedding similarity
+   - threshold 标记 weakly supported
+5. 是否能复用现有 embedding model；如果不能，如何用纯 lexical fallback。
+6. State 需要新增哪些字段。
+7. report / trace 应如何记录 verifier 结果。
+8. 风险点：
+   - 不要声称严格 fact-checking
+   - 不要阻塞主流程
+   - 不要显著增加运行成本
+9. 分阶段实现计划。
+
+限制：
+- 不要修改代码。
+- 不要新增文件。
+- 不要调用外部 LLM API。

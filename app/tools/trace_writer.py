@@ -44,13 +44,51 @@ def _summarize_chunks(chunks: list[Any], max_items: int = 5) -> dict[str, Any]:
                 "page_start": getattr(chunk, "page_start", None),
                 "page_end": getattr(chunk, "page_end", None),
                 "section_title": getattr(chunk, "section_title", None),
+                "robotics_tags": getattr(chunk, "robotics_tags", {}) or {},
+                "robotics_tag_count": getattr(chunk, "robotics_tag_count", 0),
+                "robotics_flat_tags": getattr(chunk, "robotics_flat_tags", []) or [],
                 "text_preview": safe_preview(getattr(chunk, "text", None)),
             }
         )
 
     return {
         "count": len(chunks),
+        "robotics_tag_summary": _summarize_robotics_tags(chunks),
         "preview_items": preview_items,
+    }
+
+
+def _summarize_robotics_tags(chunks: list[Any]) -> dict[str, Any]:
+    total_tagged_chunks = 0
+    tag_counts_by_category: dict[str, int] = {}
+    top_flat_tags: dict[str, int] = {}
+
+    for chunk in chunks:
+        robotics_tag_count = getattr(chunk, "robotics_tag_count", 0) or 0
+        robotics_tags = getattr(chunk, "robotics_tags", {}) or {}
+        robotics_flat_tags = getattr(chunk, "robotics_flat_tags", []) or []
+
+        if robotics_tag_count > 0:
+            total_tagged_chunks += 1
+
+        for category, values in robotics_tags.items():
+            if not values:
+                continue
+            tag_counts_by_category[category] = tag_counts_by_category.get(category, 0) + len(values)
+
+        for flat_tag in robotics_flat_tags:
+            top_flat_tags[flat_tag] = top_flat_tags.get(flat_tag, 0) + 1
+
+    return {
+        "total_tagged_chunks": total_tagged_chunks,
+        "tag_counts_by_category": tag_counts_by_category,
+        "top_flat_tags": dict(
+            sorted(
+                top_flat_tags.items(),
+                key=lambda item: item[1],
+                reverse=True,
+            )[:20]
+        ),
     }
 
 
@@ -75,6 +113,9 @@ def _summarize_retrieval_results(
                 "page_start": getattr(chunk, "page_start", None),
                 "page_end": getattr(chunk, "page_end", None),
                 "section_title": getattr(chunk, "section_title", None),
+                "robotics_tags": getattr(chunk, "robotics_tags", {}) or {},
+                "robotics_tag_count": getattr(chunk, "robotics_tag_count", 0),
+                "robotics_flat_tags": getattr(chunk, "robotics_flat_tags", []) or [],
                 "text_preview": safe_preview(getattr(chunk, "text", None)),
                 "metadata": {
                     "rank": metadata.get("rank"),
@@ -82,6 +123,9 @@ def _summarize_retrieval_results(
                     "reranker": metadata.get("reranker"),
                     "query_intent": metadata.get("query_intent"),
                     "section_prior_score": metadata.get("section_prior_score"),
+                    "matched_robotics_tags": metadata.get("matched_robotics_tags"),
+                    "robotics_tag_score": metadata.get("robotics_tag_score"),
+                    "final_score": metadata.get("final_score"),
                     "rerank_score": metadata.get("rerank_score"),
                     "multi_query": metadata.get("multi_query"),
                     "matched_query_count": metadata.get("matched_query_count"),

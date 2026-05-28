@@ -1,0 +1,49 @@
+请实现阶段 3B：轻量 Evidence Verifier 工具。
+
+目标：
+新增一个不依赖外部 LLM 的 evidence verifier，用于将 summary / critique 中的关键句与 retrieved evidence chunks 做弱匹配，输出 supported / weakly_supported 标记。
+
+建议新增文件：
+- app/tools/evidence_verifier.py
+
+实现要求：
+1. 提供函数：
+   verify_text_against_evidence(
+       generated_text: str,
+       evidence_chunks: list,
+       max_claims: int = 8
+   ) -> dict
+2. 返回结构建议：
+   {
+     "num_claims_checked": int,
+     "supported_claims": [...],
+     "weakly_supported_claims": [...],
+     "avg_support_score": float,
+     "method": "lexical_overlap" 或 "embedding_similarity"
+   }
+3. 先实现 lexical overlap 方法，保证离线可运行：
+   - 简单句子切分。
+   - 过滤过短句子。
+   - 对每个 claim 与 evidence chunk 计算 token overlap / Jaccard / coverage。
+   - 记录最高匹配 chunk 的 chunk_id / score / page_range / section。
+4. 如果当前项目已有可稳定复用的 embedding model，可以作为可选增强，但默认必须使用 lexical fallback。
+5. 不要调用 LLM。
+6. 不要访问网络。
+7. 不要让 verifier 失败导致主流程中断。
+8. 结果要可解释：每个 weak claim 给出 best_matching_chunk 和 support_score。
+9. 不要把这个称为严格事实校验，只称为 weak evidence alignment / weak support check。
+
+测试要求：
+1. 新增 scripts/test_evidence_verifier.py。
+2. 构造 fake evidence chunks，覆盖：
+   - claim 明显被 evidence 支持
+   - claim 和 evidence 无关
+   - 空 generated_text
+   - 空 evidence_chunks
+3. 测试必须离线运行。
+
+完成后请输出：
+1. verifier 方法说明。
+2. 返回结果示例。
+3. 测试命令和结果摘要。
+4. 下一步如何接入 LangGraph。

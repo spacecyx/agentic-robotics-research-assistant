@@ -1,0 +1,41 @@
+请实现阶段 1B：将 robotics-aware metadata 接入现有 chunk metadata 流程。
+
+目标：
+在现有 PDF parsing / text splitting / chunk metadata 生成流程中，为每个 chunk 增加 robotics_tags 字段，但暂时不改变 retriever 和 reranker 的排序结果。
+
+请先阅读：
+- app/states.py
+- app/nodes/split_text_node 相关文件
+- app/tools/text_splitter / pdf / context_builder 相关文件
+- 当前 chunk metadata 的数据结构定义
+
+实现要求：
+1. 复用阶段 1A 的 extract_robotics_tags(text)。
+2. 在 chunk metadata 中新增字段：
+   - robotics_tags: dict
+   - robotics_tag_count: int
+   - robotics_flat_tags: list[str] 或等价字段
+3. 保持向后兼容：
+   - 原有 chunk id、source、page range、section、char range 等字段不能丢失。
+   - 现有 context_builder 和 report_writer 不能因为缺少 robotics_tags 崩溃。
+   - 如果某些 chunk 没有命中任何 robotics tag，应使用空 dict / 空 list，而不是 None 引发异常。
+4. 在 trace 中适度记录 robotics tag 摘要：
+   - 不记录完整全文。
+   - 可以记录每个 retrieved chunk 的 robotics_tags。
+   - 可以记录整体命中统计，例如 total_tagged_chunks。
+5. 不要改变默认检索策略。
+6. 不要改变 LLM prompt。
+7. 不要重写 split_text_node。
+8. 不要改变主 CLI 参数，除非已有架构强烈需要；若新增参数，默认必须保持现有行为。
+
+请增加一个最小验证：
+1. 运行主流程或最小脚本，确认 chunk metadata 中出现 robotics_tags。
+2. 运行一个包含 robotics 术语的样例文本，确认 LiDAR / KITTI / ATE / real-time 等标签可被识别。
+3. 确认原有主流程仍能生成 Markdown report。
+4. 确认 trace 中能看到 robotics tag 摘要。
+
+完成后请输出：
+1. 修改了哪些文件。
+2. chunk metadata 新增字段示例。
+3. 对现有流程的兼容性说明。
+4. 验证命令和结果摘要。

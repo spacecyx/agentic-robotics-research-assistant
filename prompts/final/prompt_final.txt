@@ -1,0 +1,24 @@
+请只更新 README，不要修改代码。
+
+目标：
+在 README 中准确补充 Evidence Verifier 能力。
+
+要求：
+1. 说明 verifier 是 weak evidence alignment，不是严格事实校验。
+2. 说明它通过 lexical overlap 或当前实现方法，将 summary / critique 的关键句与 retrieved evidence 做匹配。
+3. 说明它会标记 weakly-supported claims，帮助发现潜在幻觉或证据不足。
+4. 在 Project Structure 中补充 evidence_verifier.py。
+5. 在 Example Output 中补充 Evidence Verification 小节。
+6. 在 Current Limitations 中说明：
+   - 当前 verifier 不是 NLI 模型
+   - 不能保证事实完全正确
+   - 后续可加入 faithfulness evaluation 或人工标注
+7. 不要夸大为 hallucination-free。
+8. 不要修改代码文件。
+
+完成后运行：
+git diff -- README.md
+
+输出：
+1. README 更新位置。
+2. 仍然保留的限制说明。

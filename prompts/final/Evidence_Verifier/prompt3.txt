@@ -1,0 +1,57 @@
+请实现阶段 3C：将 Evidence Verifier 接入 LangGraph workflow。
+
+目标：
+在 summarize_paper_node 和 critique_paper_node 之后、generate_report_node 之前，增加 evidence verification 步骤，对 summary / critique 与 retrieved evidence 做弱匹配，并将结果写入 State、trace 和 Markdown report。
+
+请先阅读：
+- app/graph.py
+- app/states.py
+- app/nodes/*
+- app/tools/evidence_verifier.py
+- app/tools/report_writer.py
+- app/tools/trace_writer.py
+
+实现要求：
+1. 新增 verify_evidence_node 或等价节点。
+2. 节点输入：
+   - summary
+   - critique
+   - retrieved evidence chunks / context chunks
+3. 节点输出到 State：
+   - summary_verification
+   - critique_verification
+   - weakly_supported_claims
+   - evidence_alignment_score
+4. 如果 summary / critique 是 fallback 文本或 LLM 调用失败：
+   - verifier 应跳过或标记为 skipped。
+   - 不要报错。
+5. 如果 retrieved evidence 为空：
+   - verifier 应返回 skipped / no_evidence。
+   - 不要报错。
+6. Trace 中记录：
+   - num_claims_checked
+   - avg_support_score
+   - weakly_supported_claims 数量
+   - verifier method
+7. Markdown report 中新增一个简短小节：
+   - Evidence Verification
+   但只输出摘要，不输出过长 JSON。
+8. 正常路径下如果没有 weak claims，可以简洁显示：
+   - No obvious weakly supported claims detected by lexical evidence check.
+9. 不要把它写成严格事实校验。
+10. 不要修改 LLM prompt。
+11. 不要影响 evaluate_retrievers.py。
+
+测试要求：
+1. 主流程可运行并生成 report。
+2. report 中包含 Evidence Verification 小节。
+3. trace 中包含 verification metadata。
+4. LLM 失败 fallback 情况下 verifier 不崩溃。
+5. 空 evidence 情况下 workflow 不崩溃。
+
+完成后请输出：
+1. graph 新增节点位置。
+2. State 新增字段。
+3. report 示例片段。
+4. trace 示例字段。
+5. 验证命令和结果摘要。

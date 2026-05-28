@@ -48,7 +48,8 @@
 - **LangGraph workflow**：用节点化流程组织论文分析任务。
 - **Modular retrievers**：支持 TF-IDF、Embedding、Hybrid、FAISS。
 - **Query expansion and multi-query RRF**：支持启发式 query expansion、多 query 检索和 RRF-style 融合。
-- **Reranking**：支持 keyword、score fusion 和 section prior reranker。
+- **Robotics-aware chunk metadata**：用规则/词典方式为 chunk 标注 sensor、dataset、metric、task、system module 和 deployment constraint 等领域标签。
+- **Reranking**：支持 keyword、score fusion、section prior 和 robotics tag prior reranker。
 - **Context construction**：控制上下文长度，并保留 chunk-level evidence metadata。
 - **Evidence-aware Markdown report**：报告中展示 chunk id、score、rank、source、page range、section、char range。
 - **LLM invocation safety**：LLM 调用支持 timeout、有限 retry、错误分类、fallback 输出和 trace/error logging。
@@ -110,9 +111,21 @@ outputs/
 
 ### Rerank
 
-对 first-stage retrieved candidates 二次排序。当前实现包括 keyword rerank、score fusion rerank 和 section prior rerank。
+对 first-stage retrieved candidates 二次排序。当前实现包括 keyword rerank、score fusion rerank、section prior rerank 和 robotics tag prior rerank。
 
 Section prior reranker 使用轻量规则式 query intent classifier，不调用 LLM。它根据 query intent 和 chunk section metadata 给候选结果一个小的 section bias，例如 method 类问题更偏向 Method / Approach / Model，experiment 类问题更偏向 Experiments / Evaluation / Results。该模块只对已召回 candidates 重排，不改变底层 retriever scoring，也不凭空召回新 chunk。
+
+Robotics tag prior reranker 复用 chunk 中的 `robotics_tags` metadata，对传感器、数据集、指标、任务类型、系统模块和部署限制等 query 增加轻量 tag prior。例如 LiDAR / KITTI / ATE / real-time 相关问题会优先提升包含对应 robotics tags 的候选 chunk。该 reranker 仍然只对 first-stage candidates 重排，不新增召回结果，也不调用 LLM。
+
+### Robotics-aware Metadata
+
+`split_text_into_chunks` 会为每个 `TextChunk` 附加轻量 robotics metadata：
+
+- `robotics_tags`
+- `robotics_tag_count`
+- `robotics_flat_tags`
+
+当前标签由 `app/tools/robotics_schema.py` 中的规则/词典抽取，覆盖 sensor modality、dataset、metric、task type、system module 和 deployment constraint。该模块用于增强 trace、评估和 rerank metadata，不是完整机器人领域知识图谱。
 
 ### LLM Safety and Traceability
 
@@ -157,15 +170,17 @@ outputs/eval/
 
 | Method | Hit@1 | Hit@3 | Hit@5 | MRR@5 | Avg Rank | Avg Latency(ms) |
 |---|---:|---:|---:|---:|---:|---:|
-| tfidf | 0.333 | 0.583 | 0.667 | 0.461 | 3.333 | 1.51 |
-| embedding | 0.417 | 0.583 | 0.667 | 0.507 | 3.167 | 7.71 |
-| hybrid | 0.417 | 0.500 | 0.667 | 0.496 | 3.333 | 7.71 |
-| tfidf+keyword_rerank | 0.417 | 0.667 | 0.750 | 0.544 | 2.917 | 0.96 |
-| tfidf+section_prior_rerank | 0.333 | 0.500 | 0.667 | 0.440 | 3.500 | 0.31 |
-| hybrid+score_fusion_rerank | 0.333 | 0.500 | 0.750 | 0.471 | 3.333 | 9.37 |
-| hybrid+section_prior_rerank | 0.500 | 0.583 | 0.750 | 0.579 | 2.917 | 5.26 |
-| hybrid+query_expansion | 0.333 | 0.583 | 0.667 | 0.447 | 3.417 | 35.44 |
-| hybrid+query_expansion+score_fusion_rerank | 0.417 | 0.583 | 0.667 | 0.521 | 3.083 | 34.13 |
+| tfidf | 0.333 | 0.583 | 0.667 | 0.461 | 3.333 | 0.37 |
+| embedding | 0.417 | 0.583 | 0.667 | 0.507 | 3.167 | 4.44 |
+| hybrid | 0.417 | 0.500 | 0.667 | 0.496 | 3.333 | 4.76 |
+| tfidf+keyword_rerank | 0.417 | 0.667 | 0.750 | 0.544 | 2.917 | 0.90 |
+| tfidf+section_prior_rerank | 0.333 | 0.500 | 0.667 | 0.440 | 3.500 | 0.34 |
+| tfidf+robotics_tag_prior_rerank | 0.417 | 0.667 | 0.750 | 0.535 | 2.917 | 2.29 |
+| hybrid+score_fusion_rerank | 0.333 | 0.500 | 0.750 | 0.471 | 3.333 | 6.54 |
+| hybrid+section_prior_rerank | 0.500 | 0.583 | 0.750 | 0.579 | 2.917 | 4.64 |
+| hybrid+robotics_tag_prior_rerank | 0.417 | 0.583 | 0.667 | 0.521 | 3.083 | 7.43 |
+| hybrid+query_expansion | 0.333 | 0.583 | 0.667 | 0.447 | 3.417 | 17.59 |
+| hybrid+query_expansion+score_fusion_rerank | 0.417 | 0.583 | 0.667 | 0.521 | 3.083 | 17.07 |
 
 说明：
 
@@ -260,12 +275,26 @@ python -m app.main \
   --retriever-weight 0.8
 ```
 
+Robotics tag prior rerank 示例：
+
+```bash
+python -m app.main \
+  --pdf data/fastlio2.pdf \
+  --query "Which LiDAR SLAM odometry method reports real-time performance and latency?" \
+  --top-k 3 \
+  --retriever-type tfidf \
+  --reranker-type robotics_tag_prior \
+  --retriever-weight 0.7
+```
+
 Trace logging 默认开启，主流程会在 `outputs/traces/` 下保存轻量 JSON trace。Trace 只记录配置、中间状态摘要、短 preview 和输出路径，不记录完整论文全文、完整 retrieved context、完整 report 或 API key。
 
 Trace 中会记录检索和生成相关的结构化 metadata，例如：
 
 - retrieved chunk 的 page range / section
 - section prior rerank 的 `query_intent`、`section_prior_score`
+- robotics metadata 的 `robotics_tags`、`robotics_tag_summary`
+- robotics tag prior rerank 的 `matched_robotics_tags`、`robotics_tag_score`、`final_score`
 - LLM 调用的 `llm_invocations`
 - 失败时的 `errors`、`fallback_used`、`error_type`、`attempts`、`latency_ms`
 
@@ -367,17 +396,20 @@ app/
   nodes/legacy/            archived old nodes
   tools/
     retrievers/            TF-IDF, embedding, hybrid, FAISS, multi-query
-    rerankers/             keyword, score-fusion, section-prior rerankers
+    rerankers/             keyword, score-fusion, section-prior, robotics-tag-prior rerankers
     vector_store/          FAISS vector store
     context_builder.py     evidence-aware context construction
     llm_safe_call.py       safe LLM invocation wrapper
     query_understanding.py rule-based query intent classifier
+    robotics_schema.py     rule-based robotics metadata extraction
     report_writer.py       Markdown report saving
     trace_writer.py        lightweight workflow trace writer
 
 scripts/
   evaluate_retrievers.py   retrieval evaluation
   compare_retrievers.py    retriever comparison
+  test_robotics_schema.py  robotics metadata smoke test
+  test_robotics_tag_prior_reranker.py robotics reranker smoke test
   test_safe_llm_invoke.py  offline LLM safety smoke test
   test_*.py                smoke tests and module checks
 
@@ -399,6 +431,8 @@ docs/
 - citation 当前已包含启发式 page range / section，但还不是严格的版面级 citation。
 - evaluation 仍是 keyword-based weak evaluation。
 - query expansion 当前是 heuristic-based，泛化性有限。
+- robotics-aware metadata 当前是规则/词典式抽取，不是完整领域知识图谱，也不是 LLM-based 信息抽取。
+- robotics tag prior reranker 只对已召回 candidates 做轻量重排，不提供完整 robotics reasoning。
 - LLM safety 已有 timeout / retry / fallback / trace 记录，但还不是生产级可观测性或多模型 fallback。
 - 尚未加入 faithfulness evaluation。
 - 尚未提供 Web UI。

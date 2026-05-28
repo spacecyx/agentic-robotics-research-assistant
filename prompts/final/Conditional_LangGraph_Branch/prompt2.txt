@@ -1,0 +1,63 @@
+请实现阶段 2B：Conditional LangGraph Branch。
+
+目标：
+在现有 LangGraph workflow 中增加检索质量判断分支：
+- 证据足够：继续 summarize / critique / report
+- 证据较弱：触发已有 query expansion 或 multi-query retrieval，再重新检索一次
+- 证据为空或仍不足：不让 workflow 崩溃，输出 fallback / warning，并尽量避免无意义 LLM 调用
+
+请先阅读：
+- app/graph.py
+- app/states.py
+- app/nodes/retrieve_context_node 相关文件
+- query expansion 当前实现文件
+- app/tools/retrieval_quality.py
+- app/tools/trace_writer.py
+- app/tools/report_writer.py
+- app/tools/llm_safe_call.py
+
+重要约束：
+1. 不要重写整个 LangGraph。
+2. 保留原有线性主流程作为默认可用路径。
+3. 尽量以最小改动加入：
+   - evaluate_retrieval_quality_node
+   - conditional edge / route function
+   - optional query expansion retry path
+4. 复用已有 query expansion 实现，不要另写一套 query rewrite。
+5. 最多只进行一次 retrieval retry，避免无限循环。
+6. 在 State 中新增必要字段：
+   - retrieval_quality
+   - retrieval_retry_count
+   - conditional_branch_decision
+   - fallback_reason
+   但必须向后兼容。
+7. 当 context 为空或 retrieval_quality 为 empty：
+   - 不要直接抛异常。
+   - 可以跳过 summarize / critique，写入 fallback summary / critique。
+   - 最终仍生成 Markdown 报告，报告中有明确 warning。
+8. 当 retrieval_quality 为 weak：
+   - 如果 query expansion 可用，则触发一次 expansion + retrieve again。
+   - 如果 retry 后仍 weak，则继续生成，但报告中标记 warning。
+9. Trace 中必须记录：
+   - retrieval_quality
+   - branch decision
+   - retry count
+   - fallback reason
+10. 不要改变默认 CLI 命令的使用方式。
+11. 如果新增 CLI 开关，默认必须保持原行为；比如 --enable-conditional-branch 可以默认关闭，或者如果默认开启，也要保证原命令不会失败。
+12. 不要调用外部 LLM 做 branch decision。
+
+测试要求：
+1. 正常检索路径仍可运行。
+2. 空检索 / 弱检索路径不会崩溃。
+3. 弱检索时最多 retry 一次。
+4. trace 中可看到 branch decision。
+5. 最终 Markdown 报告能生成，并在必要时出现 warning。
+6. evaluate_retrievers.py 不应被破坏。
+
+完成后请输出：
+1. 新增/修改的节点和 graph 变化。
+2. 条件分支逻辑。
+3. State 新增字段。
+4. 验证命令和结果摘要。
+5. 是否存在行为变化，以及如何回退。

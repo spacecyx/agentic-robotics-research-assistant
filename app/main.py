@@ -95,7 +95,7 @@ def parse_args() -> argparse.Namespace:
         "--reranker-type",
         type=str,
         default="score_fusion",
-        choices=["keyword", "score_fusion", "section_prior", "none"],
+        choices=["keyword", "score_fusion", "section_prior", "robotics_tag_prior", "none"],
         help="Reranker type used after first-stage retrieval.",
     )
 

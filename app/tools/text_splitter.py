@@ -1,6 +1,12 @@
 # 文本切分模块
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import re
+
+from app.tools.robotics_schema import (
+    extract_robotics_tags,
+    flatten_robotics_tags,
+    has_robotics_tags,
+)
 
 
 @dataclass
@@ -22,6 +28,9 @@ class TextChunk:
     page_start: int | None = None
     page_end: int | None = None
     section_title: str | None = None
+    robotics_tags: dict[str, list[str]] = field(default_factory=dict)
+    robotics_tag_count: int = 0
+    robotics_flat_tags: list[str] = field(default_factory=list)
 
 
 NOISE_KEYWORDS = (
@@ -260,6 +269,17 @@ def infer_section_title_from_chunk_text(chunk_text: str) -> str | None:
     return None
 
 
+def build_robotics_chunk_metadata(chunk_text: str) -> tuple[dict[str, list[str]], int, list[str]]:
+    tags = extract_robotics_tags(chunk_text)
+
+    if not has_robotics_tags(tags):
+        return {}, 0, []
+
+    flat_tags = flatten_robotics_tags(tags)
+
+    return tags, len(flat_tags), flat_tags
+
+
 def split_text_into_chunks(
     text: str,
     chunk_size: int = 800,
@@ -317,6 +337,10 @@ def split_text_into_chunks(
             if section_title is None:
                 section_title = infer_section_title_from_chunk_text(chunk_text)
 
+            robotics_tags, robotics_tag_count, robotics_flat_tags = build_robotics_chunk_metadata(
+                chunk_text,
+            )
+
             chunks.append(
                 TextChunk(
                     chunk_id=chunk_id,
@@ -326,6 +350,9 @@ def split_text_into_chunks(
                     page_start=page_start,
                     page_end=page_end,
                     section_title=section_title,
+                    robotics_tags=robotics_tags,
+                    robotics_tag_count=robotics_tag_count,
+                    robotics_flat_tags=robotics_flat_tags,
                 )
             )
             chunk_id += 1
