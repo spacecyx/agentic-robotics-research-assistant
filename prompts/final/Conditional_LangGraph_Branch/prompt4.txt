@@ -1,0 +1,144 @@
+请只更新 README，不要修改任何代码文件。
+
+任务目标：
+当前项目已完成 Conditional LangGraph Branch 增强，需要在 README.md 中准确体现该能力。该能力是项目展示中的重要加分点，因为它将原本线性的 RAG workflow 升级为基于检索质量评分的条件分支 workflow。
+
+项目路径：
+./agentic-robotics-research-assistant/README.md
+
+背景：
+当前项目是面向机器人 / SLAM / 3D 感知论文阅读场景的 LangGraph-based RAG workflow。此前 README 中 Current Limitations / Roadmap 曾写到：
+- LangGraph 主流程仍是线性图
+- 尚未加入条件分支和自动 query rewrite
+- Conditional LangGraph branch 计划用于“检索不足时自动 query expansion，context 为空时跳过 LLM 并给出明确错误”
+
+现在该功能已经实现，因此 README 需要从“计划项/限制项”更新为“已实现能力”。
+
+请先做事实审计，不要立即改文件：
+1. 运行 git status --short
+2. 运行 git diff --stat
+3. 运行 git diff --name-status
+4. 如果有 staged changes，也检查 git diff --cached --stat 和 git diff --cached --name-status
+5. 阅读当前 README.md
+6. 阅读与 conditional branch 相关的真实代码：
+   - app/graph.py
+   - app/states.py
+   - app/nodes/*
+   - app/tools/retrieval_quality.py 或同等模块
+   - app/tools/trace_writer.py
+   - app/tools/report_writer.py
+   - query expansion 相关模块
+   - 相关 smoke test / scripts
+
+README 更新要求：
+
+1. Project Overview / Why This Project
+   - 适度补充：项目不再只是固定线性 RAG pipeline，而是支持基于 retrieval quality 的条件分支。
+   - 表达重点是“evidence-aware, evaluation-driven, failure-aware workflow”。
+   - 不要夸大为完整 autonomous agent。
+
+2. Key Features
+   新增或更新一条：
+   - Conditional LangGraph branch：根据 retrieval quality 判断证据是否充足；证据不足时自动触发 query expansion / retrieval retry；context 为空时使用 fallback / warning，避免无意义 LLM 调用。
+   注意：
+   - 如果代码中该功能需要 CLI 开关启用，请明确写出。
+   - 如果默认开启，也说明默认行为。
+   - 不要写未实现的功能。
+
+3. System Architecture
+   更新原来的线性 workflow 图。
+   可以保留主流程，但应增加条件分支版本，例如：
+
+   PDF
+     -> load_pdf_node
+     -> split_text_node
+     -> retrieve_context_node
+     -> evaluate_retrieval_quality_node
+        ├── good evidence -> summarize_paper_node -> critique_paper_node
+        ├── weak evidence -> query expansion / retrieval retry -> summarize_paper_node
+        └── empty evidence -> fallback warning / skip unsafe LLM generation
+     -> generate_report_node
+     -> Markdown report
+
+   要求：
+   - 节点名称必须与真实代码一致。
+   - 如果实际节点名不同，请使用真实节点名。
+
+4. RAG Pipeline
+   新增一个小节，例如：
+   ### Retrieval Quality and Conditional Branching
+
+   内容应说明：
+   - retrieval quality scoring 使用哪些信号，例如 num_chunks、top_score、avg_score、section coverage、robotics tag coverage 等。只写真实实现的信号。
+   - quality_label / recommended_action / branch_decision 等字段如果真实存在，可以写。
+   - good / weak / empty 三类路径分别怎么处理。
+   - 弱证据路径最多 retry 几次，如果代码有限制请写明。
+   - 该分支决策不调用 LLM，而是轻量规则式判断。
+
+5. Trace logging
+   更新 trace 说明，补充 conditional branch 相关 metadata，例如：
+   - retrieval_quality
+   - quality_label
+   - recommended_action
+   - branch_decision
+   - retry_count
+   - fallback_reason
+   - query_expansion_used
+
+   只写真实字段，不要编造字段名。
+
+6. Example Output
+   如果报告中已经新增 warning 小节，请补充说明：
+   - 正常路径不显示 warning
+   - 证据不足 / query expansion retry / fallback 时显示简短 warning
+   - context 为空时报告仍可生成，并说明 fallback reason
+
+7. Current Limitations
+   删除或修改“LangGraph 主流程仍是线性图，尚未加入条件分支和自动 query rewrite”这类过时描述。
+   改成更准确的限制，例如：
+   - 条件分支当前基于规则式 retrieval quality scoring，不是学习式策略。
+   - query expansion 当前仍是 heuristic-based。
+   - 当前最多支持有限次数 retrieval retry，避免循环。
+   - 尚未加入严格 faithfulness evaluation / NLI-based verifier，除非已实现。
+
+8. Roadmap
+   删除或更新“Conditional LangGraph branch”作为未完成计划的描述。
+   如果该功能已完成，可以把 Roadmap 改为后续增强：
+   - 更细粒度 retrieval quality scoring
+   - learned / calibrated retrieval confidence
+   - 更稳定的 query rewrite
+   - faithfulness evaluation / evidence verifier
+
+9. Project Structure
+   如果新增了文件，请同步更新，例如：
+   - retrieval_quality.py
+   - conditional branch node
+   - test_retrieval_quality.py
+   - 其他真实新增文件
+
+10. Quick Start
+   如果 conditional branch 有 CLI 参数，请新增示例命令。
+   示例命令必须真实可运行。
+   如果该能力默认开启，则说明无需额外参数。
+   如果默认关闭，则提供启用方式，例如：
+   python -m app.main ... --enable-conditional-branch
+   具体参数以真实代码为准。
+
+严格限制：
+- 只能修改 README.md。
+- 不要修改 Python 代码。
+- 不要修改 tests。
+- 不要修改 requirements / environment。
+- 不要创建新文件。
+- 不要夸大为 production-level autonomous agent。
+- 不要说具备完整 planning、多智能体协作、长期记忆。
+- 不要说“自动修复所有检索失败”。
+- 不要说“保证无幻觉”。
+- 所有 README 描述必须基于真实代码实现。
+
+完成后请输出：
+1. 通过 git status / git diff 发现了哪些与 conditional branch 相关的代码改动。
+2. README 更新了哪些部分。
+3. 哪些原 README 描述被删除或改写，因为已经过时。
+4. 是否有代码能力没有写入 README，原因是什么。
+5. 运行 git diff -- README.md，确认只修改 README。

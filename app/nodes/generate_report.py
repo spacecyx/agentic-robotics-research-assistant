@@ -228,6 +228,48 @@ def format_generation_warnings(state: PaperState) -> str:
     return "\n".join(lines)
 
 
+def format_conditional_branch_warnings(state: PaperState) -> str:
+    """
+    Format retrieval quality branch warnings.
+    """
+
+    if not state.get("enable_conditional_branch", False):
+        return ""
+
+    decision = state.get("conditional_branch_decision", "")
+    fallback_reason = state.get("fallback_reason", "")
+    retry_count = state.get("retrieval_retry_count", 0) or 0
+    retrieval_quality = state.get("retrieval_quality", {}) or {}
+
+    if retry_count <= 0 and decision not in {"proceed_with_warning", "fallback"}:
+        return ""
+
+    reasons = retrieval_quality.get("reasons", [])
+    quality_label = retrieval_quality.get("quality_label", "unknown")
+
+    lines = [
+        "## Retrieval Quality Warnings",
+        "",
+    ]
+
+    if retry_count > 0:
+        lines.append(f"- Query expansion retry was triggered {retry_count} time(s).")
+
+    if decision == "fallback":
+        lines.append("- Retrieved context was empty, so fallback text was used instead of LLM generation.")
+    elif decision == "proceed_with_warning":
+        lines.append("- Retrieved evidence remained weak after retry; the report was generated with a warning.")
+
+    lines.append(f"- Final retrieval quality: {quality_label}.")
+
+    if fallback_reason:
+        lines.append(f"- Reason: {fallback_reason}.")
+    elif reasons:
+        lines.append("- Reason: " + ", ".join(reasons[:3]) + ".")
+
+    return "\n".join(lines)
+
+
 def generate_report_node(state: PaperState) -> PaperState:
     print(">>> running generate_report_node")
 
@@ -248,6 +290,7 @@ def generate_report_node(state: PaperState) -> PaperState:
     retrieved_evidence_details = format_retrieved_evidence_details(
         retrieval_results=retrieval_results,
     )
+    conditional_branch_warnings = format_conditional_branch_warnings(state)
     generation_warnings = format_generation_warnings(state)
 
     if not retrieval_evidence:
@@ -293,6 +336,8 @@ def generate_report_node(state: PaperState) -> PaperState:
 ## Technical Critique
 
 {paper_critique}
+
+{conditional_branch_warnings}
 
 {generation_warnings}
 

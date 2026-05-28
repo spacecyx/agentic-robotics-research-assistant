@@ -1,0 +1,491 @@
+{
+  "run_id": "dabc5e7f-bd47-4ef2-8fa2-01df4f4a28d0",
+  "created_at": "2026-05-28T23:41:12",
+  "workflow": "paper_rag_report",
+  "input": {
+    "pdf_path": "data/fastlio2.pdf",
+    "query": "What dataset and metrics are used?",
+    "top_k": 2
+  },
+  "config": {
+    "retriever_type": "tfidf",
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "enable_conditional_branch": true,
+    "faiss_index_dir": "",
+    "rebuild_faiss_index": false,
+    "use_query_expansion": true,
+    "query_expansion_max_queries": 4,
+    "multi_query_per_query_k": 10,
+    "multi_query_rrf_k": 60,
+    "retriever_candidate_k": 10,
+    "reranker_type": "none",
+    "reranker_top_k": 2,
+    "retriever_weight": 0.7,
+    "hybrid_alpha": null
+  },
+  "paper": {
+    "paper_title": "FAST-LIO2: Fast Direct LiDAR-Inertial Odometry",
+    "raw_text": {
+      "chars": 104459,
+      "preview": "[Page 1] IEEE TRANSACTIONS ON ROBOTICS, VOL. 38, NO. 4, AUGUST 2022 2053 FAST-LIO2: Fast Direct LiDAR-Inertial Odometry Wei Xu ,Y i x iC a i , Graduate Student Member , IEEE, Dongjiao He , Graduate St..."
+    },
+    "paper_text": {
+      "chars": 30079,
+      "preview": "IEEE TRANSACTIONS ON ROBOTICS, VOL. 38, NO. 4, AUGUST 2022 2053 FAST-LIO2: Fast Direct LiDAR-Inertial Odometry Wei Xu ,Y i x iC a i , Graduate Student Member , IEEE, Dongjiao He , Graduate Student Mem..."
+    },
+    "chunks": {
+      "count": 36,
+      "robotics_tag_summary": {
+        "total_tagged_chunks": 35,
+        "tag_counts_by_category": {
+          "sensor_modality": 50,
+          "task_type": 57,
+          "deployment_constraint": 26,
+          "metric": 1,
+          "system_module": 10
+        },
+        "top_flat_tags": {
+          "sensor_modality:LiDAR": 30,
+          "task_type:mapping": 20,
+          "sensor_modality:IMU": 19,
+          "task_type:odometry": 19,
+          "deployment_constraint:real-time": 14,
+          "task_type:registration": 8,
+          "deployment_constraint:robustness": 6,
+          "task_type:SLAM": 5,
+          "system_module:scan matching": 5,
+          "deployment_constraint:memory": 3,
+          "system_module:bundle adjustment": 3,
+          "task_type:localization": 2,
+          "task_type:segmentation": 2,
+          "system_module:loop closure": 2,
+          "sensor_modality:camera": 1,
+          "task_type:detection": 1,
+          "metric:latency": 1,
+          "deployment_constraint:latency": 1,
+          "deployment_constraint:compute": 1,
+          "deployment_constraint:calibration": 1
+        }
+      },
+      "preview_items": [
+        {
+          "chunk_id": 0,
+          "start_char": 0,
+          "end_char": 1000,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": null,
+          "robotics_tags": {
+            "sensor_modality": [
+              "LiDAR",
+              "IMU"
+            ],
+            "dataset": [],
+            "metric": [],
+            "task_type": [
+              "mapping",
+              "odometry"
+            ],
+            "system_module": [],
+            "deployment_constraint": [
+              "robustness"
+            ]
+          },
+          "robotics_tag_count": 5,
+          "robotics_flat_tags": [
+            "sensor_modality:LiDAR",
+            "sensor_modality:IMU",
+            "task_type:mapping",
+            "task_type:odometry",
+            "deployment_constraint:robustness"
+          ],
+          "text_preview": "IEEE TRANSACTIONS ON ROBOTICS, VOL. 38, NO. 4, AUGUST 2022 2053 FAST-LIO2: Fast Direct LiDAR-Inertial Odometry Wei Xu ,Y i x iC a i , Graduate Student Member , IEEE, Dongjiao He , Graduate Student Mem..."
+        },
+        {
+          "chunk_id": 1,
+          "start_char": 850,
+          "end_char": 1850,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": null,
+          "robotics_tags": {
+            "sensor_modality": [
+              "LiDAR",
+              "IMU"
+            ],
+            "dataset": [],
+            "metric": [],
+            "task_type": [
+              "mapping",
+              "odometry"
+            ],
+            "system_module": [],
+            "deployment_constraint": [
+              "robustness"
+            ]
+          },
+          "robotics_tag_count": 5,
+          "robotics_flat_tags": [
+            "sensor_modality:LiDAR",
+            "sensor_modality:IMU",
+            "task_type:mapping",
+            "task_type:odometry",
+            "deployment_constraint:robustness"
+          ],
+          "text_preview": "extraction module also makes it naturally adaptable to emerging LiDARs of different scanning patterns; the second main novelty is main- taining a map by an incremental k-dimensional (k-d) tree data st..."
+        },
+        {
+          "chunk_id": 2,
+          "start_char": 1700,
+          "end_char": 2700,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": null,
+          "robotics_tags": {
+            "sensor_modality": [
+              "LiDAR",
+              "IMU"
+            ],
+            "dataset": [],
+            "metric": [],
+            "task_type": [
+              "SLAM",
+              "localization",
+              "mapping",
+              "odometry"
+            ],
+            "system_module": [],
+            "deployment_constraint": [
+              "robustness"
+            ]
+          },
+          "robotics_tag_count": 7,
+          "robotics_flat_tags": [
+            "sensor_modality:LiDAR",
+            "sensor_modality:IMU",
+            "task_type:SLAM",
+            "task_type:localization",
+            "task_type:mapping",
+            "task_type:odometry",
+            "deployment_constraint:robustness"
+          ],
+          "text_preview": "are also conducted. Overall, FAST-LIO2 is computationally efﬁcient (e.g., up to 100 Hz odometry and mapping in large outdoor environments), robust (e.g., reliable pose estimation in cluttered indoor e..."
+        },
+        {
+          "chunk_id": 3,
+          "start_char": 2550,
+          "end_char": 3550,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": null,
+          "robotics_tags": {
+            "sensor_modality": [
+              "LiDAR"
+            ],
+            "dataset": [],
+            "metric": [],
+            "task_type": [],
+            "system_module": [],
+            "deployment_constraint": []
+          },
+          "robotics_tag_count": 1,
+          "robotics_flat_tags": [
+            "sensor_modality:LiDAR"
+          ],
+          "text_preview": "version 8 August 2022. This work was supported in part by the University Grants Committee of Hong Kong General Research Fund under Project 17206421 and in part by DJI under Grant 200009538. This paper..."
+        },
+        {
+          "chunk_id": 4,
+          "start_char": 3400,
+          "end_char": 4400,
+          "page_start": 1,
+          "page_end": 1,
+          "section_title": null,
+          "robotics_tags": {
+            "sensor_modality": [
+              "LiDAR"
+            ],
+            "dataset": [],
+            "metric": [],
+            "task_type": [
+              "SLAM",
+              "localization",
+              "mapping"
+            ],
+            "system_module": [],
+            "deployment_constraint": [
+              "real-time"
+            ]
+          },
+          "robotics_tag_count": 5,
+          "robotics_flat_tags": [
+            "sensor_modality:LiDAR",
+            "task_type:SLAM",
+            "task_type:localization",
+            "task_type:mapping",
+            "deployment_constraint:real-time"
+          ],
+          "text_preview": "doi.org/10.1109/TRO.2022.3141876. Digital Object Identiﬁer 10.1109/TRO.2022.3141876 xk State x at the kth LiDAR scan end time. x, ˆx,¯x Ground-true, propagated, and updated value of state x. ˜x Error..."
+        }
+      ]
+    }
+  },
+  "retrieval": {
+    "expanded_queries": [
+      "What dataset and metrics are used?"
+    ],
+    "conditional_branch": {
+      "enabled": true,
+      "retrieval_quality": {
+        "quality_label": "weak",
+        "num_chunks": 2,
+        "top_score": 0.01639344262295082,
+        "avg_score": 0.01626123744050767,
+        "section_coverage": {
+          "sections": [
+            "Unknown"
+          ],
+          "section_counts": {
+            "Unknown": 2
+          },
+          "has_experiment_like_section": false
+        },
+        "robotics_tag_coverage": {
+          "tagged_chunks": 2,
+          "category_counts": {
+            "sensor_modality": 4,
+            "task_type": 4,
+            "system_module": 2,
+            "deployment_constraint": 1
+          },
+          "flat_tag_counts": {
+            "sensor_modality:LiDAR": 2,
+            "sensor_modality:IMU": 2,
+            "task_type:mapping": 1,
+            "task_type:odometry": 1,
+            "task_type:segmentation": 1,
+            "task_type:registration": 1,
+            "system_module:loop closure": 1,
+            "system_module:scan matching": 1,
+            "deployment_constraint:real-time": 1
+          }
+        },
+        "reasons": [
+          "low_top_score",
+          "low_avg_score",
+          "missing_experiment_or_result_section",
+          "missing_dataset_or_metric_tags"
+        ],
+        "recommended_action": "expand_query"
+      },
+      "quality_label": "weak",
+      "recommended_action": "expand_query",
+      "branch_decision": "proceed_with_warning",
+      "retry_count": 1,
+      "fallback_reason": "weak_retrieval_evidence_after_retry",
+      "query_expansion_used": true
+    },
+    "retrieval_quality": {
+      "quality_label": "weak",
+      "num_chunks": 2,
+      "top_score": 0.01639344262295082,
+      "avg_score": 0.01626123744050767,
+      "section_coverage": {
+        "sections": [
+          "Unknown"
+        ],
+        "section_counts": {
+          "Unknown": 2
+        },
+        "has_experiment_like_section": false
+      },
+      "robotics_tag_coverage": {
+        "tagged_chunks": 2,
+        "category_counts": {
+          "sensor_modality": 4,
+          "task_type": 4,
+          "system_module": 2,
+          "deployment_constraint": 1
+        },
+        "flat_tag_counts": {
+          "sensor_modality:LiDAR": 2,
+          "sensor_modality:IMU": 2,
+          "task_type:mapping": 1,
+          "task_type:odometry": 1,
+          "task_type:segmentation": 1,
+          "task_type:registration": 1,
+          "system_module:loop closure": 1,
+          "system_module:scan matching": 1,
+          "deployment_constraint:real-time": 1
+        }
+      },
+      "reasons": [
+        "low_top_score",
+        "low_avg_score",
+        "missing_experiment_or_result_section",
+        "missing_dataset_or_metric_tags"
+      ],
+      "recommended_action": "expand_query"
+    },
+    "conditional_branch_decision": "proceed_with_warning",
+    "retrieval_retry_count": 1,
+    "fallback_reason": "weak_retrieval_evidence_after_retry",
+    "retrieval_results": {
+      "count": 2,
+      "preview_items": [
+        {
+          "rank": 1,
+          "chunk_id": 35,
+          "score": 0.01639344262295082,
+          "source": "tfidf+multi_query",
+          "start_char": 29750,
+          "end_char": 30079,
+          "page_start": 6,
+          "page_end": 6,
+          "section_title": null,
+          "robotics_tags": {
+            "sensor_modality": [
+              "LiDAR",
+              "IMU"
+            ],
+            "dataset": [],
+            "metric": [],
+            "task_type": [],
+            "system_module": [],
+            "deployment_constraint": []
+          },
+          "robotics_tag_count": 2,
+          "robotics_flat_tags": [
+            "sensor_modality:LiDAR",
+            "sensor_modality:IMU"
+          ],
+          "text_preview": "re usually performed before an update. 1) Propagation: Assume the optimal state estimate after fus- ing the last (i.e., k −1th) LiDAR scan is ¯xk−1 with covariance matrix ¯Pk−1. The forward propagatio...",
+          "metadata": {
+            "rank": 1,
+            "rank_before_rerank": null,
+            "reranker": null,
+            "query_intent": null,
+            "section_prior_score": null,
+            "matched_robotics_tags": null,
+            "robotics_tag_score": null,
+            "final_score": null,
+            "rerank_score": null,
+            "multi_query": true,
+            "matched_query_count": 1,
+            "best_original_rank": 1
+          }
+        },
+        {
+          "rank": 2,
+          "chunk_id": 14,
+          "score": 0.016129032258064516,
+          "source": "tfidf+multi_query",
+          "start_char": 11900,
+          "end_char": 12900,
+          "page_start": 2,
+          "page_end": 3,
+          "section_title": null,
+          "robotics_tags": {
+            "sensor_modality": [
+              "LiDAR",
+              "IMU"
+            ],
+            "dataset": [],
+            "metric": [],
+            "task_type": [
+              "mapping",
+              "odometry",
+              "segmentation",
+              "registration"
+            ],
+            "system_module": [
+              "loop closure",
+              "scan matching"
+            ],
+            "deployment_constraint": [
+              "real-time"
+            ]
+          },
+          "robotics_tag_count": 9,
+          "robotics_flat_tags": [
+            "sensor_modality:LiDAR",
+            "sensor_modality:IMU",
+            "task_type:mapping",
+            "task_type:odometry",
+            "task_type:segmentation",
+            "task_type:registration",
+            "system_module:loop closure",
+            "system_module:scan matching",
+            "deployment_constraint:real-time"
+          ],
+          "text_preview": "e odometry, multiple scans are combined into a sweep, which is then registered and merged to a global map (i.e., mapping). In this process, the map points are used to build a k-d tree that enables a v...",
+          "metadata": {
+            "rank": 2,
+            "rank_before_rerank": null,
+            "reranker": null,
+            "query_intent": null,
+            "section_prior_score": null,
+            "matched_robotics_tags": null,
+            "robotics_tag_score": null,
+            "final_score": null,
+            "rerank_score": null,
+            "multi_query": true,
+            "matched_query_count": 1,
+            "best_original_rank": 2
+          }
+        }
+      ]
+    },
+    "retrieved_context": {
+      "chars": 1538,
+      "preview": "[Source 1 | chunk_id=35 | page=6 | section=Unknown | score=0.0164 | rank=1 | source=tfidf+multi_query] re usually performed before an update. 1) Propagation: Assume the optimal state estimate after fu..."
+    },
+    "retrieval_evidence": {
+      "chars": 253,
+      "preview": "[1] chunk_id=35, score=0.0164, rank=1, source=tfidf+multi_query, page_range=(6, 6), section=Unknown, char_range=(29750, 30079) [2] chunk_id=14, score=0.0161, rank=2, source=tfidf+multi_query, page_ran..."
+    }
+  },
+  "llm_outputs": {
+    "paper_summary": {
+      "chars": 26,
+      "preview": "LOCAL_FAKE_SUMMARY weak 2c"
+    },
+    "paper_critique": {
+      "chars": 27,
+      "preview": "LOCAL_FAKE_CRITIQUE weak 2c"
+    }
+  },
+  "llm_invocations": [
+    {
+      "node_name": "summarize_paper_node",
+      "ok": true,
+      "error_type": null,
+      "error_message": null,
+      "attempts": 1,
+      "latency_ms": 0.5161129993211944,
+      "timeout_seconds": 60,
+      "max_retries": 2,
+      "fallback_used": false
+    },
+    {
+      "node_name": "critique_paper_node",
+      "ok": true,
+      "error_type": null,
+      "error_message": null,
+      "attempts": 1,
+      "latency_ms": 0.30311799946503015,
+      "timeout_seconds": 60,
+      "max_retries": 2,
+      "fallback_used": false
+    }
+  ],
+  "errors": [],
+  "outputs": {
+    "report_path": "outputs/fastlio2_rag_report_20260528_234112.md",
+    "final_report": {
+      "chars": 6099,
+      "preview": "# Paper Analysis Report ## Input - PDF: `data/fastlio2.pdf` - Query: What dataset and metrics are used? ## Paper Title FAST-LIO2: Fast Direct LiDAR-Inertial Odometry ## Retrieval Pipeline - Retriever..."
+    },
+    "trace_path": "outputs/traces/trace_20260528_234112.json"
+  }
+}
