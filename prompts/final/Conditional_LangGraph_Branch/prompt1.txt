@@ -1,0 +1,62 @@
+请实现阶段 2A：retrieval quality scoring。
+
+目标：
+新增一个轻量级检索质量评分模块，根据 retrieved chunks 的数量、分数、section 覆盖和 robotics tag 覆盖判断当前证据是否足够，为后续 LangGraph conditional branch 做准备。
+
+请先阅读：
+- app/states.py
+- app/nodes/retrieve_context_node 相关文件
+- app/tools/context_builder.py
+- app/tools/trace_writer.py
+- retrieved chunks 的数据结构
+- query expansion 当前实现位置
+
+建议新增文件：
+- app/tools/retrieval_quality.py
+
+实现要求：
+1. 提供函数：
+   evaluate_retrieval_quality(
+       query: str,
+       retrieved_chunks: list,
+       top_k: int,
+       query_intent: str | None = None
+   ) -> dict
+2. 返回结构建议：
+   {
+     "quality_label": "good" | "weak" | "empty",
+     "num_chunks": int,
+     "top_score": float | None,
+     "avg_score": float | None,
+     "section_coverage": {...},
+     "robotics_tag_coverage": {...},
+     "reasons": list[str],
+     "recommended_action": "proceed" | "expand_query" | "fallback"
+   }
+3. 判断逻辑先用规则，不调用 LLM：
+   - retrieved_chunks 为空：empty + fallback
+   - top_score / avg_score 很低：weak + expand_query
+   - query intent 是 experiment / dataset_metric，但没有 Experiments / Evaluation / Results 或 dataset/metric tags：weak + expand_query
+   - query intent 是 sensor，但没有 sensor tags：weak + expand_query
+   - 否则 good + proceed
+4. 阈值用常量集中定义，便于调整。
+5. 如果现有 score 尺度不统一，阈值要保守，避免误判太多。
+6. 不要修改 graph.py。
+7. 不要改变主流程。
+8. 不要修改 LLM 生成逻辑。
+
+测试要求：
+1. 新增 scripts/test_retrieval_quality.py 或 pytest。
+2. 覆盖：
+   - 空 retrieved chunks
+   - 有高分 chunk
+   - 有低分 chunk
+   - dataset/metric query 但没有 dataset/metric tags
+   - sensor query 且命中 LiDAR / IMU tags
+3. 测试不依赖外部 LLM API，不依赖网络。
+
+完成后请输出：
+1. scoring 规则说明。
+2. 返回结构示例。
+3. 测试命令和结果摘要。
+4. 下一步如何接入 LangGraph 条件分支。

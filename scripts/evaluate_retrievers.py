@@ -579,6 +579,11 @@ def main() -> None:
         retriever_weight=args.retriever_weight,
     )
 
+    robotics_tag_prior_reranker = create_reranker(
+        reranker_type="robotics_tag_prior",
+        retriever_weight=args.retriever_weight,
+    )
+
     method_configs = [
         {
             "method_name": "tfidf",
@@ -606,6 +611,11 @@ def main() -> None:
             "reranker": section_prior_reranker,
         },
         {
+            "method_name": "tfidf+robotics_tag_prior_rerank",
+            "retriever": tfidf_retriever,
+            "reranker": robotics_tag_prior_reranker,
+        },
+        {
             "method_name": "hybrid+score_fusion_rerank",
             "retriever": hybrid_retriever,
             "reranker": score_fusion_reranker,
@@ -614,6 +624,11 @@ def main() -> None:
             "method_name": "hybrid+section_prior_rerank",
             "retriever": hybrid_retriever,
             "reranker": section_prior_reranker,
+        },
+        {
+            "method_name": "hybrid+robotics_tag_prior_rerank",
+            "retriever": hybrid_retriever,
+            "reranker": robotics_tag_prior_reranker,
         },
         {
             "method_name": "hybrid+query_expansion",

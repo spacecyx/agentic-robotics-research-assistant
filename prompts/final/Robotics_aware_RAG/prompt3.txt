@@ -1,0 +1,61 @@
+请实现阶段 1C：Robotics tag prior reranker。
+
+目标：
+在现有 reranker 架构基础上新增一个 robotics-aware reranker，使传感器、数据集、指标、部署限制等机器人领域问题优先召回包含相关 robotics_tags 的 chunk。
+
+请先阅读：
+- app/tools/rerankers/*
+- app/tools/query_understanding.py
+- app/tools/context_builder.py
+- app/main.py 中 reranker 参数如何传入
+- scripts/evaluate_retrievers.py 中 reranker 如何参与评估
+
+实现要求：
+1. 不要重写现有 reranker 架构。
+2. 新增一个 reranker 类型，建议命名：
+   - robotics_tag_prior
+   或
+   - section_robotics_prior
+3. 该 reranker 应复用已有的 RetrievedChunk / schema 结构。
+4. 该 reranker 打分逻辑建议：
+   final_score = retriever_weight * original_score
+               + section_weight * section_prior_score
+               + robotics_weight * robotics_tag_score
+   如果当前架构不方便保留 section prior，则至少实现：
+   final_score = retriever_weight * original_score
+               + robotics_weight * robotics_tag_score
+5. robotics_tag_score 根据 query intent / query terms 与 chunk.robotics_tags 匹配：
+   - sensor 类问题优先 sensor_modality
+   - dataset / metric 类问题优先 dataset、metric
+   - deployment 类问题优先 deployment_constraint
+   - pipeline / system 类问题优先 system_module、task_type
+6. query intent 可以复用并扩展 app/tools/query_understanding.py：
+   - 不要引入 LLM intent classifier。
+   - 使用轻量规则即可。
+7. 在 rerank metadata 中保留：
+   - query_intent
+   - matched_robotics_tags
+   - robotics_tag_score
+   - original_score
+   - final_score
+8. 在 trace 中记录 reranker 类型和每个候选的 tag prior score 摘要。
+9. 接入 CLI 参数：
+   - 如果已有 --reranker-type，则新增可选值，不破坏原有值。
+   - 默认行为不变。
+10. 接入 evaluate_retrievers.py：
+   - 增加 robotics_tag_prior 或 section_robotics_prior 的评估方法。
+   - 不要删除已有评估方法。
+11. 不要修改 LLM 生成逻辑。
+12. 不要把它包装成“机器人专用智能体”，它只是 robotics-aware reranking。
+
+测试要求：
+1. 新增或复用 smoke test，验证包含 KITTI / ATE / LiDAR 等标签的 chunk 在相关 query 下排名提升。
+2. 运行 evaluate_retrievers.py，确认新增 reranker 方法能输出 Hit@K、MRR@K、Avg Rank、Latency。
+3. 运行主流程示例，确认报告和 trace 正常生成。
+
+完成后请输出：
+1. 新增 reranker 的设计说明。
+2. 修改文件列表。
+3. 新增 CLI 示例。
+4. 新增评估方法名称。
+5. 测试结果摘要。

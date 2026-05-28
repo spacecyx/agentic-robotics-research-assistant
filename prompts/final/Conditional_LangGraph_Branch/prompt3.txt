@@ -1,0 +1,39 @@
+请实现阶段 2C：Conditional Branch 的报告与 trace 收尾。
+
+目标：
+让 retrieval quality 和 conditional branch 的结果在 trace 与 Markdown report 中可见，但不要让报告变得冗长。
+
+请阅读：
+- app/tools/report_writer.py
+- app/tools/trace_writer.py
+- app/states.py
+
+实现要求：
+1. Trace 中记录完整结构化信息：
+   - retrieval_quality
+   - quality_label
+   - recommended_action
+   - branch_decision
+   - retry_count
+   - fallback_reason
+   - query_expansion_used
+2. Markdown 报告中只在必要时输出简短 warning：
+   - 证据不足
+   - 触发过 query expansion retry
+   - context 为空并使用 fallback
+3. 正常路径不要输出吓人的 warning。
+4. 不要在报告中写入完整 retrieved context 或过长 JSON。
+5. 保持现有 report 结构。
+6. 不要修改 LLM prompt。
+7. 不要改动 retriever 逻辑。
+
+测试要求：
+1. 正常路径报告不出现 warning。
+2. 弱检索路径报告出现简短 warning。
+3. trace JSON 中能看到结构化 branch 信息。
+4. 关闭 trace 时主流程仍正常。
+
+完成后请输出：
+1. Markdown warning 示例。
+2. trace 字段示例。
+3. 验证命令和结果摘要。

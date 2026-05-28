@@ -1,0 +1,47 @@
+请实现阶段 1A：Robotics-aware metadata schema。
+
+目标：
+新增一个轻量级 robotics metadata 抽取模块，用规则/词典方式从 chunk 文本中识别机器人 / SLAM / 3D 感知论文常见领域标签，为后续 tag prior reranker 做准备。
+
+请先复查当前项目结构，优先放在合适位置，例如：
+- app/tools/robotics_schema.py
+
+实现要求：
+1. 新增 robotics-aware 词表，至少覆盖：
+   - sensor_modality: LiDAR, camera, stereo, RGB-D, IMU, radar, GNSS
+   - dataset: KITTI, SemanticKITTI, nuScenes, Waymo, TUM, EuRoC, ScanNet, ModelNet, S3DIS
+   - metric: ATE, RPE, RMSE, mAP, IoU, Chamfer, F-score, FPS, runtime, latency
+   - task_type: SLAM, localization, mapping, odometry, detection, segmentation, registration, tracking, reconstruction
+   - system_module: front-end, back-end, loop closure, pose graph, bundle adjustment, scan matching, map optimization
+   - deployment_constraint: real-time, memory, compute, latency, robustness, dynamic scenes, occlusion, calibration
+2. 实现函数：
+   - extract_robotics_tags(text: str) -> dict
+   - has_robotics_tags(tags: dict) -> bool
+   - flatten_robotics_tags(tags: dict) -> list[str]
+3. 抽取逻辑要求：
+   - 不调用 LLM。
+   - 不依赖外部网络。
+   - 大小写尽量鲁棒。
+   - 避免过度匹配普通词，例如 map / camera 这种词可匹配，但要保持结果可解释。
+4. 返回结构示例：
+   {
+     "sensor_modality": ["LiDAR", "IMU"],
+     "dataset": ["KITTI"],
+     "metric": ["ATE", "RPE"],
+     "task_type": ["SLAM", "odometry"],
+     "system_module": ["front-end"],
+     "deployment_constraint": ["real-time"]
+   }
+5. 给每个命中的 tag 保持规范化名称，例如 LiDAR 不要变成 lidar / Lidar 多种形式。
+6. 增加最小离线测试或 smoke test：
+   - 优先新增 scripts/test_robotics_schema.py
+   - 不要引入复杂测试框架；如果项目已有 pytest 可复用 pytest，否则用可直接运行脚本。
+7. 不要接入 LangGraph workflow。
+8. 不要修改 retriever / reranker。
+9. 不要修改 README。
+
+完成后请输出：
+1. 新增/修改文件列表。
+2. extract_robotics_tags 的输入输出示例。
+3. 如何运行 smoke test。
+4. 下一步如何接入 chunk metadata。

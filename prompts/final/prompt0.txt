@@ -1,0 +1,62 @@
+你现在只做项目理解与改造计划审计，不要修改任何文件。
+
+项目背景：
+这是一个面向机器人 / SLAM / 3D 感知论文阅读场景的 LangGraph-based RAG workflow。当前项目已经支持 PDF 解析、文本切分、检索、重排、上下文构建、LLM 摘要/技术评价、Markdown 报告、trace logging、LLM safe invoke、retriever evaluation。
+
+我准备后续分三阶段增强：
+1. Robotics-aware RAG：构建 robotics-aware metadata 与 tag prior reranker，使传感器、数据集、指标和部署类问题优先召回相关证据。
+2. Conditional LangGraph Branch：基于检索质量评分设计条件分支，在证据不足时自动触发 query expansion 或降级输出。
+3. Evidence Verifier：增加生成结果证据校验节点，对 summary / critique 与 retrieved evidence 进行匹配，提升报告可信度。
+
+请先审计当前项目结构，重点阅读：
+- README.md
+- app/graph.py
+- app/states.py
+- app/main.py
+- app/nodes/*
+- app/tools/context_builder.py
+- app/tools/query_understanding.py
+- app/tools/trace_writer.py
+- app/tools/report_writer.py
+- app/tools/llm_safe_call.py
+- app/tools/retrievers/*
+- app/tools/rerankers/*
+- scripts/evaluate_retrievers.py
+- scripts/test_safe_llm_invoke.py
+
+请输出以下内容：
+
+1. 当前 LangGraph workflow 的真实节点顺序。
+2. 当前 State 中已有字段，以及哪些字段可用于新增 robotics metadata / retrieval quality / verification results。
+3. 当前 retriever / reranker 架构如何组织，是否已有可复用接口。
+4. 当前 query_understanding.py 是否已支持 query intent，如何扩展而不是重写。
+5. 当前 trace_writer.py 记录哪些信息，新增字段应该放在哪里。
+6. 当前 evaluate_retrievers.py 如何评估不同方法，后续是否适合加入 robotics-aware reranker。
+7. 三个阶段分别建议修改哪些文件。
+8. 哪些功能已经存在，不应该重复实现。
+9. 哪些改动有破坏主流程风险，需要避免。
+10. 给出一个最小增量改造计划，要求不大规模重构、不引入复杂依赖、不改变现有 CLI 默认行为。
+
+限制：
+- 不要修改任何文件。
+- 不要新增文件。
+- 不要重构代码。
+- 不要更新 README。
+- 不要调用外部 LLM API。
+- 输出必须具体到文件名、函数名或类名。
+
+全局约束：
+1. 先阅读相关文件再修改，不要凭空设计。
+2. 复用现有模块，不要重复实现 retriever、reranker、trace writer、safe_llm_invoke、query expansion。
+3. 不要大规模重构 app/graph.py、app/states.py 或现有节点。
+4. 默认 CLI 行为必须保持兼容。
+5. 新增功能优先通过可选参数启用。
+6. 不调用外部 LLM API，不依赖网络。
+7. 不新增重依赖。
+8. 每次只完成当前阶段，不要顺手实现后续阶段。
+9. 每次完成后必须说明：
+   - 修改文件
+   - 设计取舍
+   - 验证命令
+   - 是否存在风险或未完成项
+10. 如果发现已有功能可复用，必须复用并说明，不要重复造轮子。
