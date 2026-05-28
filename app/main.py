@@ -119,6 +119,12 @@ def parse_args() -> argparse.Namespace:
         help="Disable lightweight workflow trace JSON output.",
     )
 
+    parser.add_argument(
+        "--enable-conditional-branch",
+        action="store_true",
+        help="Enable retrieval quality branch with one query expansion retry or fallback.",
+    )
+
     return parser.parse_args()
 
 
@@ -190,6 +196,8 @@ def main() -> None:
         "retriever_weight": args.retriever_weight,
         "trace_dir": args.trace_dir,
         "disable_trace": args.disable_trace,
+        "enable_conditional_branch": args.enable_conditional_branch,
+        "retrieval_retry_count": 0,
     }
 
     # 展示选择的模型

@@ -41,6 +41,13 @@ class PaperState(TypedDict, total=False):
     max_context_chars: int
     max_chunk_chars: int
 
+    # Conditional retrieval quality branch
+    enable_conditional_branch: bool
+    retrieval_quality: dict[str, Any]
+    retrieval_retry_count: int
+    conditional_branch_decision: str
+    fallback_reason: str
+
     # Query Expansion / Multi-query retrieval
     use_query_expansion: bool
     query_expansion_max_queries: int

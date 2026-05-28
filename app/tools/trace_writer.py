@@ -140,6 +140,21 @@ def _summarize_retrieval_results(
     }
 
 
+def _summarize_conditional_branch(state: PaperState) -> dict[str, Any]:
+    retrieval_quality = state.get("retrieval_quality", {}) or {}
+
+    return {
+        "enabled": bool(state.get("enable_conditional_branch", False)),
+        "retrieval_quality": retrieval_quality,
+        "quality_label": retrieval_quality.get("quality_label"),
+        "recommended_action": retrieval_quality.get("recommended_action"),
+        "branch_decision": state.get("conditional_branch_decision"),
+        "retry_count": state.get("retrieval_retry_count", 0),
+        "fallback_reason": state.get("fallback_reason", ""),
+        "query_expansion_used": bool(state.get("use_query_expansion", False)),
+    }
+
+
 def build_trace_from_state(state: PaperState) -> dict[str, Any]:
     chunks = state.get("chunks", [])
     retrieval_results = state.get("retrieval_results", [])
@@ -156,6 +171,7 @@ def build_trace_from_state(state: PaperState) -> dict[str, Any]:
         "config": {
             "retriever_type": state.get("retriever_type"),
             "embedding_model": state.get("embedding_model"),
+            "enable_conditional_branch": state.get("enable_conditional_branch"),
             "faiss_index_dir": state.get("faiss_index_dir"),
             "rebuild_faiss_index": state.get("rebuild_faiss_index"),
             "use_query_expansion": state.get("use_query_expansion"),
@@ -176,6 +192,11 @@ def build_trace_from_state(state: PaperState) -> dict[str, Any]:
         },
         "retrieval": {
             "expanded_queries": state.get("expanded_queries"),
+            "conditional_branch": _summarize_conditional_branch(state),
+            "retrieval_quality": state.get("retrieval_quality"),
+            "conditional_branch_decision": state.get("conditional_branch_decision"),
+            "retrieval_retry_count": state.get("retrieval_retry_count"),
+            "fallback_reason": state.get("fallback_reason"),
             "retrieval_results": _summarize_retrieval_results(retrieval_results),
             "retrieved_context": _text_summary(state.get("retrieved_context")),
             "retrieval_evidence": _text_summary(state.get("retrieval_evidence")),
