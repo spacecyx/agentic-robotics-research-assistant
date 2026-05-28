@@ -155,6 +155,21 @@ def _summarize_conditional_branch(state: PaperState) -> dict[str, Any]:
     }
 
 
+def _summarize_verification_result(verification: dict[str, Any] | None) -> dict[str, Any]:
+    verification = verification or {}
+    weakly_supported_claims = verification.get("weakly_supported_claims", [])
+
+    return {
+        "status": verification.get("status"),
+        "method": verification.get("method"),
+        "num_claims_checked": verification.get("num_claims_checked", 0),
+        "avg_support_score": verification.get("avg_support_score", 0.0),
+        "weakly_supported_claims_count": len(weakly_supported_claims),
+        "source_field": verification.get("source_field"),
+        "skip_reason": verification.get("skip_reason"),
+    }
+
+
 def build_trace_from_state(state: PaperState) -> dict[str, Any]:
     chunks = state.get("chunks", [])
     retrieval_results = state.get("retrieval_results", [])
@@ -204,6 +219,12 @@ def build_trace_from_state(state: PaperState) -> dict[str, Any]:
         "llm_outputs": {
             "paper_summary": _text_summary(state.get("paper_summary")),
             "paper_critique": _text_summary(state.get("paper_critique")),
+        },
+        "evidence_verification": {
+            "summary": _summarize_verification_result(state.get("summary_verification")),
+            "critique": _summarize_verification_result(state.get("critique_verification")),
+            "weakly_supported_claims_count": len(state.get("weakly_supported_claims", [])),
+            "evidence_alignment_score": state.get("evidence_alignment_score", 0.0),
         },
         "llm_invocations": state.get("llm_invocations", []),
         "errors": state.get("errors", []),

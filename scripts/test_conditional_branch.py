@@ -12,6 +12,7 @@ from app.nodes.evaluate_retrieval_quality import (  # noqa: E402
 )
 from app.nodes.fallback_generation import fallback_generation_node  # noqa: E402
 from app.nodes.generate_report import generate_report_node  # noqa: E402
+from app.nodes.verify_evidence import verify_evidence_node  # noqa: E402
 from app.tools.trace_writer import build_trace_from_state  # noqa: E402
 from app.tools.retrievers.schemas import RetrievalResult  # noqa: E402
 from app.tools.text_splitter import TextChunk  # noqa: E402
@@ -90,8 +91,10 @@ def assert_empty_branch_fallback_report() -> None:
     assert route_after_retrieval_quality(state) == "fallback_generation"
 
     state.update(fallback_generation_node(state))
+    state.update(verify_evidence_node(state))
     state.update(generate_report_node(state))
 
+    assert state["summary_verification"]["status"] == "skipped"
     assert state["output_path"]
     assert "Retrieval Quality Warnings" in state["final_report"]
     assert "Retrieved context was empty" in state["final_report"]
