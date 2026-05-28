@@ -65,6 +65,10 @@ class PaperState(TypedDict, total=False):
     # LLM outputs/analysis
     paper_summary: str
     paper_critique: str
+    summary_verification: dict[str, Any]
+    critique_verification: dict[str, Any]
+    weakly_supported_claims: list[dict[str, Any]]
+    evidence_alignment_score: float
     errors: list[dict[str, Any]]
     llm_invocations: list[dict[str, Any]]
 

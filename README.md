@@ -2,65 +2,70 @@
 
 面向机器人 / SLAM / 3D 感知论文阅读的 **LangGraph-based RAG workflow**。
 
-本项目将本地 research paper PDF 转换为结构化 Markdown 分析报告，重点关注：
+输入部分由一篇本地论文 PDF 和一个阅读问题 query 组成，输出是一份带检索证据、技术总结、批判性分析和 trace 信息的 Markdown 报告。当前实现更接近一个面向论文阅读的 RAG workflow，而不是完整 autonomous agent 系统；项目重点放在证据检索、流程可追踪、检索策略对比和失败路径处理上。
 
-- 多阶段论文理解 workflow
-- evidence-aware report generation
-- modular retriever comparison
-- evaluation-driven RAG improvement
-- retrieval-quality-aware conditional branching
+## TL;DR
 
-当前项目不是 production-level autonomous agent system，也不声称具备完整 autonomous planning、多智能体协作、长期记忆或生产级部署能力。它更准确的定位是：一个围绕论文阅读场景构建的可解释、可评估、可扩展的 RAG workflow。
+这个项目把一篇 research paper PDF 转换为 evidence-aware Markdown 分析报告。核心思路是：
+
+1. 先检索和重排论文片段，再让 LLM 基于 retrieved evidence 生成总结与评价。
+2. 记录 retrieval、rerank、branch decision、LLM invocation 和 evidence verification 的轻量 trace。
+3. 为机器人 / SLAM / 3D 感知论文加入 robotics-aware metadata 与 tag-prior rerank。
+4. 在检索证据不足或 LLM 调用失败时，保留 fallback / warning，而不是直接中断流程。
 
 ## Project Overview
 
-`Agentic Robotics Research Assistant` 用 LangGraph 编排论文处理流程，从 PDF 解析、文本切分、检索、重排、上下文构建，到 LLM 生成论文摘要和技术评价，最终保存为 Markdown 报告。项目支持可选的 retrieval quality 条件分支：证据充足时继续生成，证据较弱时最多触发一次 query expansion / retrieval retry，证据为空时使用 fallback 输出，避免对空 context 做无意义 LLM 调用。
+`Agentic Robotics Research Assistant` 使用 LangGraph 组织论文阅读流程：
 
-目标用户包括：
+```text
+PDF -> chunks -> retrieval / rerank -> context -> summary / critique -> verification -> report
+```
 
-- 机器人 / SLAM / 3D 感知方向工程师
-- 正在学习深度学习、大模型应用、Agent 工程的开发者
-- 希望用项目展示 RAG 工程能力和论文分析能力的求职者
+当前支持的主要能力：
 
-典型输出报告包含：
+- PDF parsing、文本清洗和 chunking
+- TF-IDF / Embedding / Hybrid / FAISS 检索
+- query expansion 和 multi-query RRF
+- keyword / score fusion / section prior / robotics tag prior rerank
+- robotics-aware chunk metadata
+- retrieval quality scoring 和可选 conditional branch
+- LLM safe invoke、fallback 和 trace logging
+- weak evidence alignment，用于检查生成内容和 retrieved evidence 的对应关系
+- retriever evaluation，并导出 CSV / Markdown 结果
+
+典型报告包含：
 
 - paper summary
 - technical critique
 - retrieved evidence
-- retriever configuration
-- query expansion / rerank metadata
+- retrieval / rerank configuration
+- query expansion metadata
+- retrieval quality warnings
+- evidence verification summary
 
 ## Why This Project
 
-普通 PDF QA demo 往往只解决“问一句、答一句”的问题，难以体现检索证据、检索质量和系统工程取舍。
+很多 PDF QA demo 只展示“问一句、答一句”。论文阅读通常需要更完整的上下文：哪些片段支撑了总结？不同检索策略效果如何？检索结果太弱时是否应该重试？LLM 调用失败后是否还能留下可排查的结果？
 
-本项目关注的是论文阅读场景下更完整的 RAG workflow：
-
-- 用 LangGraph 将论文分析拆成多个明确节点。
-- 用 retrieved evidence 解释 LLM 报告依据。
-- 对比 TF-IDF、Embedding、Hybrid、Query Expansion、Rerank 等检索策略。
-- 用 Hit@K、MRR@K、Avg Rank 和 Latency 做 retrieval evaluation。
-- 用 retrieval quality scoring 将 RAG workflow 从固定线性链路扩展为 failure-aware conditional workflow。
-
-这使项目更适合作为大模型应用工程 / AI Agent 应用开发方向的求职展示项目。
+这个项目把重点放在 RAG workflow 的工程问题上：证据构建、检索对比、条件分支、失败降级和 trace 复现，而不是 UI 或长链 autonomous planning。
 
 ## Key Features
 
 - **PDF parsing and cleaning**：读取本地论文 PDF，提取标题并清洗文本。
-- **LangGraph workflow**：用节点化流程组织论文分析任务。
+- **LangGraph workflow**：用节点组织论文分析流程，并保留清晰的 State 传递。
 - **Modular retrievers**：支持 TF-IDF、Embedding、Hybrid、FAISS。
 - **Query expansion and multi-query RRF**：支持启发式 query expansion、多 query 检索和 RRF-style 融合。
-- **Robotics-aware chunk metadata**：用规则/词典方式为 chunk 标注 sensor、dataset、metric、task、system module 和 deployment constraint 等领域标签。
+- **Robotics-aware metadata**：为 chunk 标注 sensor、dataset、metric、task、system module 和 deployment constraint 等标签。
 - **Reranking**：支持 keyword、score fusion、section prior 和 robotics tag prior reranker。
-- **Conditional LangGraph branch**：可通过 `--enable-conditional-branch` 启用 retrieval quality 判断；证据较弱时自动触发一次 query expansion / retrieval retry，context 为空时使用 fallback / warning，避免无意义 LLM 调用。
-- **Context construction**：控制上下文长度，并保留 chunk-level evidence metadata。
-- **Evidence-aware Markdown report**：报告中展示 chunk id、score、rank、source、page range、section、char range。
-- **LLM invocation safety**：LLM 调用支持 timeout、有限 retry、错误分类、fallback 输出和 trace/error logging。
+- **Retrieval quality scoring**：用规则式 scorer 判断 retrieved evidence 是否足够。
+- **Conditional branch**：通过 `--enable-conditional-branch` 启用；证据较弱时最多触发一次 query expansion / retrieval retry，context 为空时 fallback。
+- **Evidence verifier**：用 lexical overlap 对 summary / critique 的关键句和 retrieved evidence 做 weak evidence alignment。
+- **Trace logging**：记录配置、中间状态摘要、retrieval metadata、rerank metadata、branch decision、LLM invocation 和输出路径。
 - **Retriever evaluation**：支持 Hit@1、Hit@3、Hit@K、MRR@K、Avg Rank、Latency，并导出 CSV / Markdown。
 
 ## System Architecture
 
-默认主 LangGraph workflow 保持兼容：
+默认 workflow 会执行检索、重排、retrieval quality scoring、LLM 生成、evidence verification 和报告写入，但 retrieval quality 只记录结果，不改变主流程路径。
 
 ```text
 PDF
@@ -70,11 +75,12 @@ PDF
   -> evaluate_retrieval_quality_node
   -> summarize_paper_node
   -> critique_paper_node
+  -> verify_evidence_node
   -> generate_report_node
   -> Markdown report
 ```
 
-启用 `--enable-conditional-branch` 后，retrieval quality 会决定后续路径：
+启用 `--enable-conditional-branch` 后，`evaluate_retrieval_quality_node` 会参与路径选择：
 
 ```text
 PDF
@@ -82,9 +88,19 @@ PDF
   -> split_text_node
   -> retrieve_context_node
   -> evaluate_retrieval_quality_node
-       |-- good evidence -> summarize_paper_node -> critique_paper_node
-       |-- weak evidence -> query expansion / retrieval retry -> evaluate_retrieval_quality_node
-       |-- empty evidence -> fallback_generation_node
+       |-- good evidence
+       |     -> summarize_paper_node
+       |     -> critique_paper_node
+       |
+       |-- weak evidence
+       |     -> enable query expansion
+       |     -> retrieve_context_node
+       |     -> evaluate_retrieval_quality_node
+       |     -> summarize_paper_node / critique_paper_node
+       |
+       |-- empty evidence
+       |     -> fallback_generation_node
+  -> verify_evidence_node
   -> generate_report_node
   -> Markdown report
 ```
@@ -103,85 +119,105 @@ scripts/
   evaluation and smoke-test scripts
 
 outputs/
-  generated reports and evaluation results
+  generated reports, traces, and evaluation results
 ```
 
 ## RAG Pipeline
 
-### TF-IDF Retriever
+### Retrievers
 
-关键词匹配 baseline，适合术语明确的问题，速度快，便于和其他检索策略对比。
+**TF-IDF Retriever**  
+关键词 baseline，适合术语明确的问题，速度快，便于对比。
 
-### Embedding Retriever
+**Embedding Retriever**  
+基于 `sentence-transformers` 做语义检索，适合 query 和论文原文表述不完全一致的情况。
 
-基于 `sentence-transformers` 的语义检索，适合 query 和论文原文表达不完全一致的情况。
+**Hybrid Retriever**  
+融合 TF-IDF 和 embedding 分数，兼顾关键词匹配和语义召回。
 
-### Hybrid Retriever
-
-融合 TF-IDF 和 embedding 分数，兼顾关键词精确匹配和语义召回。
-
-### FAISS Retriever
-
+**FAISS Retriever**  
 使用本地 FAISS 向量索引，避免每次运行重复构建文档 embedding。当前用于 paper-level local retrieval，不是大规模向量检索服务。
 
 ### Query Expansion + Multi-query RRF
 
-对复杂问题生成多个 query variants，分别检索后进行去重和 RRF-style 融合。该方法可能提升召回，但也会增加 per-query latency。
+`HeuristicQueryExpander` 根据规则生成 query variants。`MultiQueryRetriever` 对多个 query 分别检索，再用 RRF-style 分数融合和去重。这个功能可以提高召回，但会增加 per-query latency。
 
 ### Retrieval Quality and Conditional Branching
 
-`evaluate_retrieval_quality_node` 会调用规则式 retrieval quality scorer，对 retrieved results 进行轻量判断。该判断不调用 LLM，使用的信号包括：
+`evaluate_retrieval_quality_node` 使用规则式 scorer 判断 retrieved evidence 是否足够。它不调用 LLM，主要参考：
 
 - retrieved chunk 数量
 - top score / average score
 - section coverage，尤其是 Experiments / Evaluation / Results 类 section
 - robotics tag coverage，例如 sensor / dataset / metric tags
 
-评分结果包含 `quality_label` 和 `recommended_action`。当前路径包括：
+输出中包含 `quality_label` 和 `recommended_action`：
 
-- `good` / `proceed`：继续 `summarize_paper_node` 和 `critique_paper_node`。
-- `weak` / `expand_query`：如果尚未 retry 且 query expansion 未开启，则设置 `use_query_expansion=True`，回到 `retrieve_context_node` 最多重试一次。
-- retry 后仍 weak：继续生成报告，但在 Markdown 中加入简短 warning。
-- `empty` / `fallback`：进入 `fallback_generation_node`，跳过 summary / critique 的 LLM 调用，仍生成 Markdown 报告。
+- `good` / `proceed`：继续 summary 和 critique。
+- `weak` / `expand_query`：如果还没有 retry，则设置 `use_query_expansion=True`，回到 `retrieve_context_node`，最多重试一次。
+- retry 后仍 weak：继续生成报告，但写入 retrieval quality warning。
+- `empty` / `fallback`：进入 `fallback_generation_node`，跳过 summary / critique 的 LLM 调用，仍生成报告。
 
-该能力默认关闭，需要通过 `--enable-conditional-branch` 显式启用。默认 CLI 命令仍保持原有使用方式。
+该能力默认只记录 retrieval quality。要让它控制 workflow 路径，需要显式传入 `--enable-conditional-branch`。
 
 ### Rerank
 
-对 first-stage retrieved candidates 二次排序。当前实现包括 keyword rerank、score fusion rerank、section prior rerank 和 robotics tag prior rerank。
+对 first-stage candidates 做二次排序。当前包括：
 
-Section prior reranker 使用轻量规则式 query intent classifier，不调用 LLM。它根据 query intent 和 chunk section metadata 给候选结果一个小的 section bias，例如 method 类问题更偏向 Method / Approach / Model，experiment 类问题更偏向 Experiments / Evaluation / Results。该模块只对已召回 candidates 重排，不改变底层 retriever scoring，也不凭空召回新 chunk。
+- `keyword`
+- `score_fusion`
+- `section_prior`
+- `robotics_tag_prior`
 
-Robotics tag prior reranker 复用 chunk 中的 `robotics_tags` metadata，对传感器、数据集、指标、任务类型、系统模块和部署限制等 query 增加轻量 tag prior。例如 LiDAR / KITTI / ATE / real-time 相关问题会优先提升包含对应 robotics tags 的候选 chunk。该 reranker 仍然只对 first-stage candidates 重排，不新增召回结果，也不调用 LLM。
+`section_prior` 使用规则式 query intent classifier，根据 query intent 和 chunk section metadata 给候选结果轻量 bias。
+
+`robotics_tag_prior` 复用 chunk 中的 `robotics_tags` metadata。传感器、数据集、指标或部署相关问题会优先提升包含对应 robotics tags 的候选 chunk。它只对已召回 candidates 重排，不新增召回结果，也不调用 LLM。
 
 ### Robotics-aware Metadata
 
-`split_text_into_chunks` 会为每个 `TextChunk` 附加轻量 robotics metadata：
+`split_text_into_chunks` 会为每个 `TextChunk` 附加：
 
 - `robotics_tags`
 - `robotics_tag_count`
 - `robotics_flat_tags`
 
-当前标签由 `app/tools/robotics_schema.py` 中的规则/词典抽取，覆盖 sensor modality、dataset、metric、task type、system module 和 deployment constraint。该模块用于增强 trace、评估和 rerank metadata，不是完整机器人领域知识图谱。
+标签由 `app/tools/robotics_schema.py` 中的规则/词典抽取，覆盖 sensor modality、dataset、metric、task type、system module 和 deployment constraint。它用于 trace、评估和 rerank metadata，不是完整机器人领域知识图谱。
+
+### Evidence Verification
+
+`verify_evidence_node` 在 summary / critique 之后、report 之前运行。当前 verifier 使用 `app/tools/evidence_verifier.py` 中的 lexical overlap 方法，将 summary / critique 中抽取出的 claim-like sentences 与 retrieved evidence chunks 做弱匹配。
+
+输出字段包括：
+
+- `summary_verification`
+- `critique_verification`
+- `weakly_supported_claims`
+- `evidence_alignment_score`
+
+这个模块用于提示哪些生成句子可能缺少 retrieved evidence 支撑。它是 weak evidence alignment，不是严格事实校验，也不保证报告完全无幻觉。
 
 ### LLM Safety and Traceability
 
-`summarize_paper_node` 和 `critique_paper_node` 通过统一的 `safe_llm_invoke` 调用 LLM，支持：
+`summarize_paper_node` 和 `critique_paper_node` 通过 `safe_llm_invoke` 调用 LLM。失败时会记录错误并返回 fallback 文本，避免单次请求中断整个 workflow。
 
-- timeout control
-- limited retry
-- error classification
-- latency statistics
-- fallback output
-- trace/error logging
+trace JSON 会记录：
 
-如果 LLM 调用失败，workflow 不会直接中断，而是在报告中写入清晰的 fallback 文本，并在 trace JSON 中记录 `llm_invocations` 和 `errors`。这不是 production-grade high availability 机制，而是为了让本地 RAG workflow 在 API timeout、网络错误或上下文过长时更容易调试和复现。
+- input / config
+- chunk 和 retrieval preview
+- query expansion metadata
+- retrieval quality 和 branch decision
+- rerank metadata
+- evidence verification summary
+- LLM invocation status
+- report / trace output path
+
+trace 只保存摘要、preview 和结构化 metadata，不保存完整论文全文、完整 report 或 API key。
 
 ## Evaluation
 
 评估脚本：[scripts/evaluate_retrievers.py](scripts/evaluate_retrievers.py)
 
-当前支持指标：
+当前指标：
 
 - Hit@1
 - Hit@3
@@ -219,12 +255,14 @@ outputs/eval/
 | hybrid+query_expansion | 0.333 | 0.583 | 0.667 | 0.447 | 3.417 | 17.59 |
 | hybrid+query_expansion+score_fusion_rerank | 0.417 | 0.583 | 0.667 | 0.521 | 3.083 | 17.07 |
 
+该表主要用于比较不同 retrieval / rerank 策略在同一小规模评估集上的相对表现，不代表通用 benchmark 性能。
+
 说明：
 
-- 当前 relevance 判断仍是 keyword-based weak evaluation。
+- 当前 relevance 判断是 keyword-based weak evaluation。
 - Latency 不包含 retriever 初始化、embedding 模型加载、FAISS index loading/building。
 - Latency 包含每个 method 内部的 query expansion、multi-query retrieval、rerank 成本。
-- 后续计划加入 `relevant_chunk_ids`、page citation 和 faithfulness evaluation。
+- 后续可以加入 `relevant_chunk_ids`、page citation 和更严格的 faithfulness evaluation。
 
 ## Quick Start
 
@@ -259,7 +297,7 @@ OPENAI_MODEL=gpt-4o-mini
 
 ### 3. Run Main Workflow
 
-Hybrid retrieval 示例：
+Hybrid retrieval：
 
 ```bash
 python -m app.main \
@@ -269,7 +307,7 @@ python -m app.main \
   --retriever-type hybrid
 ```
 
-FAISS retrieval 示例：
+FAISS retrieval：
 
 ```bash
 python -m app.tools.build_faiss_index \
@@ -287,7 +325,7 @@ python -m app.main \
   --faiss-index-dir data/index/resnet
 ```
 
-Query expansion 示例：
+Query expansion：
 
 ```bash
 python -m app.main \
@@ -300,7 +338,7 @@ python -m app.main \
   --multi-query-per-query-k 8
 ```
 
-Section prior rerank 示例：
+Section prior rerank：
 
 ```bash
 python -m app.main \
@@ -312,41 +350,28 @@ python -m app.main \
   --retriever-weight 0.8
 ```
 
-Robotics tag prior rerank 示例：
+Robotics tag prior rerank：
 
 ```bash
 python -m app.main \
-  --pdf data/fastlio2.pdf \
-  --query "Which LiDAR SLAM odometry method reports real-time performance and latency?" \
+  --pdf data/<your_robotics_paper>.pdf \
+  --query "Which sensor modalities, datasets, metrics, and deployment constraints are discussed?" \
   --top-k 3 \
   --retriever-type tfidf \
   --reranker-type robotics_tag_prior \
   --retriever-weight 0.7
 ```
 
-Conditional branch 示例：
+Conditional branch：
 
 ```bash
 python -m app.main \
-  --pdf data/fastlio2.pdf \
+  --pdf data/<your_robotics_paper>.pdf \
   --query "What dataset and metrics are used?" \
   --top-k 3 \
   --retriever-type tfidf \
   --enable-conditional-branch
 ```
-
-Trace logging 默认开启，主流程会在 `outputs/traces/` 下保存轻量 JSON trace。Trace 只记录配置、中间状态摘要、短 preview 和输出路径，不记录完整论文全文、完整 retrieved context、完整 report 或 API key。
-
-Trace 中会记录检索和生成相关的结构化 metadata，例如：
-
-- retrieved chunk 的 page range / section
-- retrieval quality 的 `quality_label`、`recommended_action`
-- conditional branch 的 `branch_decision`、`retry_count`、`fallback_reason`、`query_expansion_used`
-- section prior rerank 的 `query_intent`、`section_prior_score`
-- robotics metadata 的 `robotics_tags`、`robotics_tag_summary`
-- robotics tag prior rerank 的 `matched_robotics_tags`、`robotics_tag_score`、`final_score`
-- LLM 调用的 `llm_invocations`
-- 失败时的 `errors`、`fallback_used`、`error_type`、`attempts`、`latency_ms`
 
 自定义 trace 输出目录：
 
@@ -387,7 +412,7 @@ outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.csv
 outputs/eval/retriever_eval_YYYYMMDD_HHMMSS.md
 ```
 
-不保存评估结果、只看命令行输出：
+只看命令行输出：
 
 ```bash
 python -m scripts.evaluate_retrievers \
@@ -399,13 +424,16 @@ python -m scripts.evaluate_retrievers \
 
 ### 5. Run Smoke Tests
 
-LLM safe invoke 离线 smoke test：
-
 ```bash
 python scripts/test_safe_llm_invoke.py
+python scripts/test_evidence_verifier.py
+python scripts/test_conditional_branch.py
+python scripts/test_retrieval_quality.py
+python scripts/test_robotics_schema.py
+python scripts/test_robotics_tag_prior_reranker.py
 ```
 
-该脚本不请求外部 LLM API，覆盖成功调用、普通异常、timeout、content-too-long 不重试等场景。
+这些脚本用于离线 smoke test，不请求外部 LLM API。
 
 ## Example Output
 
@@ -426,22 +454,31 @@ outputs/
 - context passed to LLM
 - paper summary
 - technical critique
+- evidence verification summary
 
-如果启用了 conditional branch，正常路径不会输出 retrieval warning。证据较弱、触发过 query expansion retry，或 context 为空进入 fallback 时，报告会额外包含简短的：
+如果启用了 conditional branch，正常路径不会输出 retrieval warning。证据较弱、触发过 query expansion retry，或 context 为空进入 fallback 时，报告会包含：
 
 ```text
 Retrieval Quality Warnings
 ```
 
-context 为空时报告仍会生成，并在 summary / critique 位置写入 fallback reason。
+报告也会包含：
 
-如果 LLM 调用失败，报告会继续生成，并额外包含简短的：
+```text
+Evidence Verification
+```
+
+该小节只展示 verifier method、claims checked、average support score、status 和 weakly-supported claims 数量。没有明显 weak claims 时会显示：
+
+```text
+No obvious weakly supported claims detected by lexical evidence check.
+```
+
+LLM 调用失败时，报告会继续生成，并包含：
 
 ```text
 Generation Warnings
 ```
-
-正常路径不会输出该 warning 小节。
 
 ## Project Structure
 
@@ -453,12 +490,14 @@ app/
   nodes/                   LangGraph nodes
   nodes/evaluate_retrieval_quality.py conditional branch decision node
   nodes/fallback_generation.py fallback output node for empty evidence
+  nodes/verify_evidence.py weak evidence alignment node
   nodes/legacy/            archived old nodes
   tools/
     retrievers/            TF-IDF, embedding, hybrid, FAISS, multi-query
     rerankers/             keyword, score-fusion, section-prior, robotics-tag-prior rerankers
     vector_store/          FAISS vector store
     context_builder.py     evidence-aware context construction
+    evidence_verifier.py   lexical weak evidence alignment
     llm_safe_call.py       safe LLM invocation wrapper
     query_understanding.py rule-based query intent classifier
     retrieval_quality.py   rule-based retrieval quality scoring
@@ -470,6 +509,7 @@ scripts/
   evaluate_retrievers.py   retrieval evaluation
   compare_retrievers.py    retriever comparison
   test_conditional_branch.py conditional branch smoke test
+  test_evidence_verifier.py evidence verifier smoke test
   test_retrieval_quality.py retrieval quality smoke test
   test_robotics_schema.py  robotics metadata smoke test
   test_robotics_tag_prior_reranker.py robotics reranker smoke test
@@ -480,7 +520,7 @@ data/
   sample PDFs and evaluation queries
 
 outputs/
-  generated reports and evaluation results
+  generated reports, traces, and evaluation results
 
 docs/
   audit and design notes
@@ -488,24 +528,36 @@ docs/
 
 ## Current Limitations
 
-- 当前是 workflow-first，不是完整 autonomous agent。
-- Conditional branch 当前基于规则式 retrieval quality scoring，不是 learned / calibrated confidence model。
-- chunking 仍以 fixed-size character chunking 为主，但已附加启发式 page range / section metadata。
-- citation 当前已包含启发式 page range / section，但还不是严格的版面级 citation。
-- evaluation 仍是 keyword-based weak evaluation。
-- query expansion 当前是 heuristic-based，泛化性有限；conditional branch 最多只进行一次 retrieval retry，避免循环。
-- robotics-aware metadata 当前是规则/词典式抽取，不是完整领域知识图谱，也不是 LLM-based 信息抽取。
+**Workflow and retrieval**
+
+- 当前实现偏 workflow，不是完整 autonomous agent 系统。
+- Conditional branch 基于规则式 retrieval quality scoring，不是 learned / calibrated confidence model。
+- query expansion 是 heuristic-based；conditional branch 最多只进行一次 retrieval retry，避免循环。
 - robotics tag prior reranker 只对已召回 candidates 做轻量重排，不提供完整 robotics reasoning。
-- LLM safety 已有 timeout / retry / fallback / trace 记录，但还不是生产级可观测性或多模型 fallback。
-- 尚未加入 faithfulness evaluation。
+
+**Document understanding**
+
+- chunking 仍以 fixed-size character chunking 为主，只附加启发式 page range / section metadata。
+- citation 包含启发式 page range / section，但还不是严格版面级 citation。
+- robotics-aware metadata 是规则/词典式抽取，不是完整领域知识图谱，也不是 LLM-based 信息抽取。
+
+**Evaluation and verification**
+
+- evaluation 仍是 keyword-based weak evaluation。
+- evidence verifier 是 lexical overlap 弱匹配，不是 NLI 模型或严格 fact-checker，不能保证事实完全正确。
+- 尚未加入基于人工标注或 NLI 的严格 faithfulness evaluation。
+
+**Engineering**
+
+- LLM safety 有 timeout / retry / fallback / trace 记录，但还不是生产级可观测性或多模型 fallback。
 - 尚未提供 Web UI。
 
 ## Roadmap
 
-- **Trace logging**：继续增强 LLM 调用、retrieval、rerank 和报告生成的可复现记录。
-- **Minimal tests**：补充核心模块的最小 smoke/pytest 测试，优先覆盖 `text_splitter`、`query_expansion`、`reranker`、`context_builder`、`llm_safe_call`。
-- **Section-aware chunking**：从启发式 section metadata 逐步升级到更稳定的 section / paragraph / page-aware chunking。
-- **Page citation**：将启发式 page range 继续增强为更可靠的 page-level citation。
-- **Retrieval quality scoring**：继续增强检索质量评分，例如 learned / calibrated retrieval confidence 和更稳定的 query rewrite。
-- **Evidence verifier**：加入 faithfulness evaluation / evidence verifier，检查 summary 和 critique 是否被 retrieved evidence 支撑。
+- **Trace schema**：继续增强 branch、rerank、verification 等中间结果的结构化记录。
+- **Tests**：从 smoke tests 逐步补充 pytest tests，覆盖 graph routing、rerank scoring 和 report generation。
+- **Section-aware chunking**：从启发式 section metadata 升级到更稳定的 section / paragraph / page-aware chunking。
+- **Page citation**：将启发式 page range 增强为更可靠的 page-level citation。
+- **Retrieval quality scoring**：探索 learned / calibrated retrieval confidence 和更稳定的 query rewrite。
+- **Evidence verifier**：从 lexical weak alignment 增强到 faithfulness evaluation、NLI-based verifier 或人工标注评估。
 - **Streamlit demo**：展示 PDF、query、answer/report 和 retrieved evidence。

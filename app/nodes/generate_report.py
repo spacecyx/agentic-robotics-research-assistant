@@ -270,6 +270,62 @@ def format_conditional_branch_warnings(state: PaperState) -> str:
     return "\n".join(lines)
 
 
+def format_evidence_verification_summary(state: PaperState) -> str:
+    """
+    Format compact weak evidence alignment summary.
+    """
+
+    summary_verification = state.get("summary_verification", {}) or {}
+    critique_verification = state.get("critique_verification", {}) or {}
+
+    if not summary_verification and not critique_verification:
+        return ""
+
+    weakly_supported_claims = state.get("weakly_supported_claims", []) or []
+    evidence_alignment_score = state.get("evidence_alignment_score", 0.0)
+    total_claims_checked = (
+        int(summary_verification.get("num_claims_checked", 0) or 0)
+        + int(critique_verification.get("num_claims_checked", 0) or 0)
+    )
+    method = (
+        summary_verification.get("method")
+        or critique_verification.get("method")
+        or "lexical_overlap"
+    )
+    statuses = [
+        status
+        for status in [
+            summary_verification.get("status"),
+            critique_verification.get("status"),
+        ]
+        if status
+    ]
+
+    lines = [
+        "## Evidence Verification",
+        "",
+        f"- Method: {method} weak evidence alignment.",
+        f"- Claims Checked: {total_claims_checked}",
+        f"- Average Support Score: {float(evidence_alignment_score):.3f}",
+        f"- Status: {', '.join(statuses) if statuses else 'unknown'}",
+    ]
+
+    if not weakly_supported_claims:
+        lines.append("- No obvious weakly supported claims detected by lexical evidence check.")
+        return "\n".join(lines)
+
+    lines.append(f"- Weakly Supported Claims: {len(weakly_supported_claims)}")
+
+    example_claim = weakly_supported_claims[0]
+    claim_text = str(example_claim.get("claim", "")).strip()
+    if len(claim_text) > 220:
+        claim_text = claim_text[:220].rstrip() + "..."
+
+    lines.append(f"- Example Weak Claim: {claim_text}")
+
+    return "\n".join(lines)
+
+
 def generate_report_node(state: PaperState) -> PaperState:
     print(">>> running generate_report_node")
 
@@ -291,6 +347,7 @@ def generate_report_node(state: PaperState) -> PaperState:
         retrieval_results=retrieval_results,
     )
     conditional_branch_warnings = format_conditional_branch_warnings(state)
+    evidence_verification_summary = format_evidence_verification_summary(state)
     generation_warnings = format_generation_warnings(state)
 
     if not retrieval_evidence:
@@ -338,6 +395,8 @@ def generate_report_node(state: PaperState) -> PaperState:
 {paper_critique}
 
 {conditional_branch_warnings}
+
+{evidence_verification_summary}
 
 {generation_warnings}
 

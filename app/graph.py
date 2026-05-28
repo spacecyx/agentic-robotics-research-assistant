@@ -11,6 +11,7 @@ from app.nodes.evaluate_retrieval_quality import (
 from app.nodes.summarize_paper import summarize_paper_node
 from app.nodes.critique_paper import critique_paper_node
 from app.nodes.fallback_generation import fallback_generation_node
+from app.nodes.verify_evidence import verify_evidence_node
 from app.nodes.generate_report import generate_report_node
 
 
@@ -46,6 +47,7 @@ def build_graph():
     builder.add_node("summarize_paper", summarize_paper_node)
     builder.add_node("critique_paper", critique_paper_node)
     builder.add_node("fallback_generation", fallback_generation_node)
+    builder.add_node("verify_evidence", verify_evidence_node)
     builder.add_node("generate_report", generate_report_node)
 
     # 表示第一个执行的节点 | 等价于从 START 指向指定节点
@@ -65,8 +67,9 @@ def build_graph():
         },
     )
     builder.add_edge("summarize_paper", "critique_paper")
-    builder.add_edge("critique_paper", "generate_report")
-    builder.add_edge("fallback_generation", "generate_report")
+    builder.add_edge("critique_paper", "verify_evidence")
+    builder.add_edge("fallback_generation", "verify_evidence")
+    builder.add_edge("verify_evidence", "generate_report")
     builder.add_edge("generate_report", END)
 
     # 编译成可执行图
